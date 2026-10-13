@@ -17,6 +17,8 @@ import mimetypes
 from urllib.parse import urlparse, parse_qs
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
+import gzip
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
@@ -25,20 +27,34 @@ from backend_service import SERVICE
 
 FRONTEND_DIR = os.path.join(CURRENT_DIR, "frontend")
 
+MIME_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".ico": "image/x-icon",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".csv": "text/csv; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8"
+}
+
+# In-memory static asset cache: {file_path: (mtime, size, etag, raw_bytes, gzip_bytes, mime_type)}
+_STATIC_ASSET_CACHE = {}
+
 
 class BCSRequestHandler(SimpleHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=FRONTEND_DIR, **kwargs)
 
     def log_message(self, format, *args):
         # Clean logging
         sys.stderr.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {self.address_string()} - {format % args}\n")
-
-    def end_headers(self):
-        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-        self.send_header("Pragma", "no-cache")
-        self.send_header("Expires", "0")
-        super().end_headers()
 
     def _send_cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -52,12 +68,27 @@ class BCSRequestHandler(SimpleHTTPRequestHandler):
 
     def _send_json(self, status_code: int, data: dict):
         body = json.dumps(data, indent=2).encode("utf-8")
+        accept_encoding = self.headers.get("Accept-Encoding", "")
+        use_gzip = "gzip" in accept_encoding and len(body) > 512
+
+        if use_gzip:
+            compressed = gzip.compress(body, compresslevel=6)
+            body_to_send = compressed
+        else:
+            body_to_send = body
+
         self.send_response(status_code)
         self._send_cors_headers()
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
+        if use_gzip:
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
+        self.send_header("Content-Length", str(len(body_to_send)))
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.end_headers()
-        self.wfile.write(body)
+        self.wfile.write(body_to_send)
 
     def _read_json_body(self) -> dict:
         content_length = int(self.headers.get("Content-Length", 0))
@@ -81,12 +112,63 @@ class BCSRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json(500, {"error": str(e), "path": path})
             return
 
-        # Default fallback to index.html for SPA client-side routing if file doesn't exist
-        file_path = os.path.join(FRONTEND_DIR, path.lstrip("/"))
+        # High-performance static asset handler with in-memory caching, ETag 304, and Gzip
+        clean_rel = path.lstrip("/")
+        file_path = os.path.join(FRONTEND_DIR, clean_rel) if clean_rel else os.path.join(FRONTEND_DIR, "index.html")
         if not os.path.exists(file_path) or os.path.isdir(file_path):
-            index_path = os.path.join(FRONTEND_DIR, "index.html")
-            if os.path.exists(index_path):
-                self.path = "/index.html"
+            file_path = os.path.join(FRONTEND_DIR, "index.html")
+
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            try:
+                stat = os.stat(file_path)
+                mtime = stat.st_mtime
+                size = stat.st_size
+                etag = f'"{int(mtime)}-{size}"'
+
+                # 304 Not Modified validation
+                client_etag = self.headers.get("If-None-Match")
+                if client_etag and client_etag.strip() == etag:
+                    self.send_response(304)
+                    self._send_cors_headers()
+                    self.send_header("ETag", etag)
+                    self.send_header("Cache-Control", "public, max-age=3600, must-revalidate")
+                    self.end_headers()
+                    return
+
+                # Check / update cache
+                cached = _STATIC_ASSET_CACHE.get(file_path)
+                if not cached or cached[0] != mtime or cached[1] != size:
+                    ext = os.path.splitext(file_path)[1].lower()
+                    mime_type = MIME_TYPES.get(ext, "application/octet-stream")
+                    with open(file_path, "rb") as f:
+                        raw_data = f.read()
+                    gz_data = gzip.compress(raw_data, compresslevel=6) if ext in (".html", ".js", ".css", ".json", ".svg", ".txt") else None
+                    cached = (mtime, size, etag, raw_data, gz_data, mime_type, ext)
+                    _STATIC_ASSET_CACHE[file_path] = cached
+
+                _, _, etag, raw_data, gz_data, mime_type, ext = cached
+
+                accept_encoding = self.headers.get("Accept-Encoding", "")
+                use_gzip = bool("gzip" in accept_encoding and gz_data and len(raw_data) > 512)
+                data_to_send = gz_data if use_gzip else raw_data
+
+                self.send_response(200)
+                self._send_cors_headers()
+                self.send_header("Content-Type", mime_type)
+                if use_gzip:
+                    self.send_header("Content-Encoding", "gzip")
+                    self.send_header("Vary", "Accept-Encoding")
+                self.send_header("ETag", etag)
+                if ext == ".html":
+                    self.send_header("Cache-Control", "public, max-age=60, must-revalidate")
+                else:
+                    self.send_header("Cache-Control", "public, max-age=3600, must-revalidate")
+                self.send_header("Content-Length", str(len(data_to_send)))
+                self.end_headers()
+                self.wfile.write(data_to_send)
+                return
+            except Exception as e:
+                sys.stderr.write(f"Static serve error: {e}\n")
 
         super().do_GET()
 
@@ -509,7 +591,7 @@ class BCSRequestHandler(SimpleHTTPRequestHandler):
 
         # 10. Run Fresh Benchmarks
         if path == "/api/benchmarks/run":
-            res = SERVICE.run_benchmarks()
+            res = SERVICE.run_benchmarks(force_fresh=True)
             self._send_json(200, res)
             return
 

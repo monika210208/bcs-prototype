@@ -579,6 +579,9 @@ class BackendService:
             details="Alex Rivera verified Groth16 circuit zero-knowledge constraint parameters (3m 10s dwell time)."
         )
 
+        self._cached_benchmarks = None
+        self._cached_benchmarks_ts = 0
+
     # --- User & Identity API ---
     def get_users(self):
         result = []
@@ -2120,8 +2123,12 @@ class BackendService:
             "cryptoScheme": "CP-ABE Access Tree (AES-256-GCM + Shamir Secret Sharing)"
         }
 
-    def run_benchmarks(self):
+    def run_benchmarks(self, force_fresh: bool = False):
         """Run real evaluation benchmarks: Latency, Gas, Revocation Efficiency."""
+        now = time.time()
+        if not force_fresh and self._cached_benchmarks is not None and (now - self._cached_benchmarks_ts < 60):
+            return self._cached_benchmarks
+
         latencies = []
         for _ in range(50):
             t0 = time.perf_counter()
@@ -2144,7 +2151,7 @@ class BackendService:
 
         reencrypt_baseline_ms = bcs_revocation_ms * 48.5 + 240.0
 
-        return {
+        res = {
             "accessGrantLatencyMs": round(avg_grant_latency, 3),
             "cryptoKeyDerivationLatencyMs": round(avg_crypto_latency, 3),
             "bcsRevocationTimeMs": round(bcs_revocation_ms, 3),
@@ -2166,6 +2173,9 @@ class BackendService:
                 "cryptographicIntegrityVerified": True
             }
         }
+        self._cached_benchmarks = res
+        self._cached_benchmarks_ts = now
+        return res
 
     # --- Emergency Responder Whitelist Management ---
     def get_file_emergency_whitelist(self, file_id: str):

@@ -10,41 +10,142 @@ const API_BASE = (window.location.protocol === 'file:' || !window.location.origi
   ? 'http://localhost:8000/api'
   : `${window.location.origin}/api`;
 
+// Button loading state & visual feedback helper
+function setButtonLoading(btn, isLoading, loadingText = 'Processing...') {
+  if (!btn) return;
+  if (isLoading) {
+    if (btn.dataset.originalHtml === undefined) {
+      btn.dataset.originalHtml = btn.innerHTML;
+    }
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span>${loadingText}`;
+  } else {
+    btn.disabled = false;
+    if (btn.dataset.originalHtml !== undefined) {
+      btn.innerHTML = btn.dataset.originalHtml;
+    }
+  }
+}
+
+// In-flight request deduplication and short TTL cache
+const _inflightGetRequests = new Map();
+const _apiGetCache = new Map();
+
+const CACHEABLE_GET_ENDPOINTS = {
+  '/organizations': 20000,
+  '/classifications': 60000,
+  '/benchmarks': 45000,
+  '/overview': 10000
+};
+
+function invalidateApiCache(prefix = null) {
+  if (!prefix) {
+    _apiGetCache.clear();
+    return;
+  }
+  for (const k of _apiGetCache.keys()) {
+    if (k.startsWith(prefix)) {
+      _apiGetCache.delete(k);
+    }
+  }
+}
+
 const api = {
-  async get(endpoint, params = {}) {
+  async get(endpoint, params = {}, options = {}) {
     const url = new URL(`${API_BASE}${endpoint}`);
     Object.keys(params).forEach(k => {
       if (params[k] !== undefined && params[k] !== null) {
         url.searchParams.append(k, params[k]);
       }
     });
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || `HTTP ${res.status}`);
+
+    const cacheKey = url.pathname + url.search;
+    const ttl = CACHEABLE_GET_ENDPOINTS[endpoint] || 0;
+
+    // 1. Check TTL cache if allowed
+    if (!options.noCache && ttl > 0) {
+      const cached = _apiGetCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp < ttl)) {
+        return cached.data;
+      }
     }
-    return res.json();
+
+    // 2. Deduplicate concurrent identical GET requests
+    if (_inflightGetRequests.has(cacheKey)) {
+      return _inflightGetRequests.get(cacheKey);
+    }
+
+    const fetchPromise = (async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+      try {
+        const res = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (ttl > 0) {
+          _apiGetCache.set(cacheKey, { timestamp: Date.now(), data });
+        }
+        return data;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          throw new Error('Request timed out (25s). Please check server connectivity.');
+        }
+        throw err;
+      } finally {
+        _inflightGetRequests.delete(cacheKey);
+      }
+    })();
+
+    _inflightGetRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
   },
 
   async post(endpoint, data = {}) {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(json.error || `HTTP ${res.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+
+      // Safe cache invalidation on successful mutation
+      invalidateApiCache();
+      return json;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('Operation timed out (35s). Please retry.');
+      }
+      throw err;
     }
-    return json;
   }
 };
+
 
 // --- Application State ---
 const state = {
@@ -1407,16 +1508,36 @@ function startCountdownTimer(expiresAtEpoch) {
 
 // --- Dashboard & Analytics Charts ---
 async function loadDashboard() {
+  if (state.overview) {
+    const kpiFiles = document.getElementById('kpi-files');
+    const kpiGrants = document.getElementById('kpi-grants');
+    const kpiDenials = document.getElementById('kpi-denials');
+    const kpiUsers = document.getElementById('kpi-users');
+    const kpiGas = document.getElementById('kpi-gas');
+    if (kpiFiles) kpiFiles.textContent = state.overview.totalFiles;
+    if (kpiGrants) kpiGrants.textContent = state.overview.grantsCount;
+    if (kpiDenials) kpiDenials.textContent = state.overview.denialsCount;
+    if (kpiUsers) kpiUsers.textContent = state.overview.totalUsers;
+    if (kpiGas) kpiGas.textContent = `${Math.round((state.overview.estimatedGasUsed || 0) / 1000)}k`;
+    renderDecisionsChart(state.overview);
+    renderGasChart();
+  }
+
   try {
     const overview = await api.get('/overview');
     state.overview = overview;
 
     // KPI numbers
-    document.getElementById('kpi-files').textContent = overview.totalFiles;
-    document.getElementById('kpi-grants').textContent = overview.grantsCount;
-    document.getElementById('kpi-denials').textContent = overview.denialsCount;
-    document.getElementById('kpi-users').textContent = overview.totalUsers;
-    document.getElementById('kpi-gas').textContent = `${Math.round(overview.estimatedGasUsed / 1000)}k`;
+    const kpiFiles = document.getElementById('kpi-files');
+    const kpiGrants = document.getElementById('kpi-grants');
+    const kpiDenials = document.getElementById('kpi-denials');
+    const kpiUsers = document.getElementById('kpi-users');
+    const kpiGas = document.getElementById('kpi-gas');
+    if (kpiFiles) kpiFiles.textContent = overview.totalFiles;
+    if (kpiGrants) kpiGrants.textContent = overview.grantsCount;
+    if (kpiDenials) kpiDenials.textContent = overview.denialsCount;
+    if (kpiUsers) kpiUsers.textContent = overview.totalUsers;
+    if (kpiGas) kpiGas.textContent = `${Math.round(overview.estimatedGasUsed / 1000)}k`;
 
     renderDecisionsChart(overview);
     renderGasChart();
@@ -1619,10 +1740,13 @@ async function loadAuditLogs() {
     if (search) params.search = search;
     params.caller = state.activeUserId;
 
-    state.auditLogs = await api.get('/audit', params);
+    const [auditLogs, rootRes] = await Promise.all([
+      api.get('/audit', params),
+      api.get('/audit/merkle-root')
+    ]);
+    state.auditLogs = auditLogs;
 
     // Update root in banner
-    const rootRes = await api.get('/audit/merkle-root');
     const rootEl = document.getElementById('onchain-merkle-root');
     if (rootEl) rootEl.textContent = rootRes.merkleRoot;
 
@@ -1690,6 +1814,9 @@ async function loadAuditLogs() {
 
 // --- Benchmarks View ---
 async function loadBenchmarks() {
+  if (state.benchmarks) {
+    renderBenchmarks(state.benchmarks);
+  }
   try {
     state.benchmarks = await api.get('/benchmarks');
     renderBenchmarks(state.benchmarks);
@@ -1799,6 +1926,9 @@ async function handleUploadFormSubmit(e) {
     : [];
   const emergencyWhitelist = alsoEmergencyWhitelist ? authorizedUsers : [];
 
+  const submitBtn = document.getElementById('btn-submit-upload') || e.target?.querySelector?.('button[type="submit"]');
+  setButtonLoading(submitBtn, true, 'Encrypting & Storing On-Chain...');
+
   try {
     const res = await api.post('/files/upload', {
       fileId,
@@ -1820,12 +1950,16 @@ async function handleUploadFormSubmit(e) {
     if (authInp) authInp.value = '';
     const extraMsg = authorizedUsers.length > 0 ? ` (${authorizedUsers.length} user(s) whitelisted)` : '';
     showToast(`Successfully encrypted and registered '${fileName}' on-chain!${extraMsg}`, 'success');
-    await loadUsers();
-    await loadFiles();
-    loadDashboard();
+    await Promise.all([
+      loadUsers(),
+      loadFiles(),
+      loadDashboard()
+    ]);
     switchView('uploader');
   } catch (err) {
     showToast(`Upload failed: ${err.message}`, 'error');
+  } finally {
+    setButtonLoading(submitBtn, false);
   }
 }
 
@@ -2160,6 +2294,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-submit-verify-worker')?.addEventListener('click', async () => {
     if (!pendingOrgToUnlock) return;
     const pwd = document.getElementById('verify-worker-password-input')?.value.trim();
+    const btn = document.getElementById('btn-submit-verify-worker');
+    setButtonLoading(btn, true, 'Verifying...');
 
     try {
       const res = await api.post('/organizations/verify-worker', {
@@ -2178,6 +2314,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (err) {
       showToast(`Verification failed: ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(btn, false);
     }
   });
 
@@ -2206,6 +2344,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       members.unshift(state.activeUserId);
     }
 
+    const saveBtn = document.getElementById('btn-save-new-org');
+    setButtonLoading(saveBtn, true, 'Creating Organization...');
+
     try {
       await api.post('/organizations', {
         orgId: oid,
@@ -2226,6 +2367,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderOrgPortal();
     } catch (err) {
       showToast(`Failed to create organization: ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(saveBtn, false);
     }
   });
 
@@ -2313,6 +2456,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Merkle Proof Verify Button
   document.getElementById('btn-run-proof-verify')?.addEventListener('click', async () => {
     if (!state.targetProofData) return;
+    const btn = document.getElementById('btn-run-proof-verify');
+    setButtonLoading(btn, true, 'Verifying Proof...');
     try {
       const res = await api.post('/audit/verify-proof', {
         leafHashHex: state.targetProofData.leafHashHex,
@@ -2330,6 +2475,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (err) {
       showToast(`Verification error: ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(btn, false);
     }
   });
 
@@ -2360,13 +2507,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Live Benchmark Button
   document.getElementById('btn-run-live-benchmark')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-run-live-benchmark');
+    setButtonLoading(btn, true, 'Running Suite...');
     try {
       showToast('Running benchmark suite on EVM state-machine...', 'info');
       const b = await api.post('/benchmarks/run');
+      state.benchmarks = b;
       renderBenchmarks(b);
       showToast('Benchmarks completed successfully!', 'success');
     } catch (err) {
       showToast(`Benchmark error: ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(btn, false);
     }
   });
 
@@ -2392,6 +2544,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const gateBtn = document.getElementById('btn-submit-org-gate-login');
+    setButtonLoading(gateBtn, true, 'Authenticating...');
+
     try {
       const res = await api.post('/organizations/verify-worker', {
         orgId: activeOrg.orgId,
@@ -2416,6 +2571,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (err) {
       showToast(`Authentication failed: ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(gateBtn, false);
     }
   };
 
@@ -2473,6 +2630,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const addMemberBtn = document.getElementById('btn-save-org-add-member');
+    setButtonLoading(addMemberBtn, true, 'Whitelisting...');
+
     try {
       const res = await api.post(`/organizations/${activeOrg.orgId}/members`, {
         userId: uid,
@@ -2486,14 +2646,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           : `'${res.userId || uid}'`;
         showToast(`Authorized and whitelisted ${addedInfo} for ${activeOrg.name}!`, 'success');
         document.getElementById('modal-org-add-member')?.classList.remove('active');
-        await loadUsers();
-        await loadOrganizations();
-        await renderOrgPortal();
+        await Promise.all([
+          loadUsers(),
+          loadOrganizations()
+        ]);
+        renderOrgPortal();
       }
     } catch(err) {
       showToast(`Failed to add member: ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(addMemberBtn, false);
     }
   });
+
 
   // Multi-Role: Switch Active Role Listener
   document.getElementById('active-user-role-select')?.addEventListener('change', async (e) => {
@@ -2755,6 +2920,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const loginBtn = document.getElementById('btn-submit-frontdoor-login');
+    setButtonLoading(loginBtn, true, 'Authenticating...');
+
     try {
       const res = await api.post('/auth/login', { userId: uid, password: pwd });
       if (res.authenticated) {
@@ -2764,15 +2932,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearFrontdoorErrors();
         showToast(`Authenticated as ${res.user.name}! Clearance: ${res.user.clearance}`, 'success');
         window.hideFrontdoorOverlay();
-        await loadUsers();
-        await loadFiles();
+        await Promise.all([
+          loadUsers(),
+          loadFiles(),
+          loadDashboard(),
+          refreshEmergencyConsole()
+        ]);
         updateActiveUserDisplay();
         if (state.currentView === 'requester') renderRequesterFilesTable();
         if (state.currentView === 'uploader') renderUploaderFilesTable();
         if (state.currentView === 'org-portal') renderOrgPortal();
         if (state.currentView === 'audit') loadAuditLogs();
-        await loadDashboard();
-        await refreshEmergencyConsole();
       } else {
         const errMsg = res.error || 'Authentication failed. Please verify username and password.';
         showLoginError(errMsg);
@@ -2791,6 +2961,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         highlightInput('frontdoor-login-password');
       }
       showToast(errMsg, 'error');
+    } finally {
+      setButtonLoading(loginBtn, false);
     }
   };
 
@@ -2830,6 +3002,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const regBtn = document.getElementById('btn-reg-step2-submit');
+    setButtonLoading(regBtn, true, 'Creating Account...');
+
     try {
       const res = await api.post('/auth/register', {
         userId: username,
@@ -2845,13 +3020,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearFrontdoorErrors();
         showToast(`Account registered for ${res.user.organizationId}! Initial Clearance: ${res.user.clearance}`, 'success');
         window.hideFrontdoorOverlay();
-        await loadOrganizations();
-        await loadUsers();
-        await loadFiles();
+        await Promise.all([
+          loadOrganizations(),
+          loadUsers(),
+          loadFiles(),
+          loadDashboard(),
+          refreshEmergencyConsole()
+        ]);
         updateActiveUserDisplay();
         if (state.currentView === 'requester') renderRequesterFilesTable();
-        await loadDashboard();
-        await refreshEmergencyConsole();
       } else {
         const errMsg = res.error || 'Registration failed. Please check your information.';
         showRegError(errMsg, 2);
@@ -2868,6 +3045,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         showRegError(errMsg, 2);
       }
       showToast(errMsg, 'error');
+    } finally {
+      setButtonLoading(regBtn, false);
     }
   };
 
@@ -2883,6 +3062,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       showToast('Please enter your username to verify', 'warning');
       return;
     }
+
+    const vBtn = document.getElementById('btn-forgot-verify-user');
+    setButtonLoading(vBtn, true, 'Verifying...');
 
     try {
       const res = await api.post('/auth/verify-reset-user', { userId: uid });
@@ -2906,6 +3088,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       showForgotError(errMsg);
       highlightInput('frontdoor-forgot-username');
       showToast(errMsg, 'error');
+    } finally {
+      setButtonLoading(vBtn, false);
     }
   };
 
@@ -2939,6 +3123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       showToast('Passwords do not match', 'error');
       return;
     }
+
+    const rBtn = document.getElementById('btn-forgot-submit-reset');
+    setButtonLoading(rBtn, true, 'Updating Password...');
 
     try {
       const res = await api.post('/auth/reset-password', {
@@ -2975,8 +3162,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         highlightInput('frontdoor-forgot-new-password');
       }
       showToast(errMsg, 'error');
+    } finally {
+      setButtonLoading(rBtn, false);
     }
   };
+
 
   function openForgotPasswordPane() {
     clearFrontdoorErrors();
@@ -3833,8 +4023,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial Metadata Pre-Fetch for Frontdoor Registration Dropdowns
   try {
-    await loadOrganizations();
-    await loadClassifications();
+    await Promise.all([
+      loadOrganizations(),
+      loadClassifications()
+    ]);
   } catch (err) {
     console.warn('Initial metadata pre-fetch:', err);
   }
