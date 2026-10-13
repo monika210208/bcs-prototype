@@ -6,9 +6,9 @@
  */
 
 // --- API Service Layer ---
-const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-  ? `${window.location.origin}/api`
-  : 'http://localhost:8000/api';
+const API_BASE = (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null')
+  ? 'http://localhost:8000/api'
+  : `${window.location.origin}/api`;
 
 const api = {
   async get(endpoint, params = {}) {
@@ -307,7 +307,19 @@ function populateOrgSelects() {
   const reqOrgFilter = document.getElementById('requester-org-filter');
   const frontdoorRegOrg = document.getElementById('frontdoor-reg-org');
 
-  const options = state.organizations.map(o => 
+  const defaultOrgs = [
+    { orgId: 'org_hospital', name: 'Metro General Hospital', sector: 'Healthcare & Clinical PHI' },
+    { orgId: 'org_defense', name: 'Defense Cyber Command (DoD / Army)', sector: 'Defense & Military' },
+    { orgId: 'org_apex', name: 'Apex Financial Corp', sector: 'FinTech & Sovereign Assets' },
+    { orgId: 'org_cyber_labs', name: 'Quantum Cyber Labs', sector: 'Research & Advanced Tech' },
+    { orgId: 'org_general', name: 'General Public Commons', sector: 'Open Public Workspace' }
+  ];
+
+  const orgList = (Array.isArray(state.organizations) && state.organizations.length > 0)
+    ? state.organizations
+    : defaultOrgs;
+
+  const options = orgList.map(o => 
     `<option value="${o.orgId}">${escapeHtml(o.name)} (${escapeHtml(o.sector)})</option>`
   ).join('');
 
@@ -3098,6 +3110,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const b2 = document.getElementById('badge-step-2');
     if (b1) b1.classList.remove('active');
     if (b2) b2.classList.add('active');
+
+    // Ensure organizations dropdown is populated for Step 2
+    populateOrgSelects();
+    if (!state.organizations || state.organizations.length === 0) {
+      loadOrganizations().catch(() => {});
+    }
   });
 
   // Step 2 -> Step 1 back transition

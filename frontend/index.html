@@ -704,7 +704,11 @@
               <div class="form-group">
                 <label class="form-label">Target Organization Workspace</label>
                 <select id="frontdoor-reg-org" class="form-select">
-                  <!-- Populated via JS -->
+                  <option value="org_hospital">Metro General Hospital (Healthcare & Clinical PHI)</option>
+                  <option value="org_defense">Defense Cyber Command (DoD / Army) (Defense & Military)</option>
+                  <option value="org_apex">Apex Financial Corp (FinTech & Sovereign Assets)</option>
+                  <option value="org_cyber_labs">Quantum Cyber Labs (Research & Advanced Tech)</option>
+                  <option value="org_general">General Public Commons (Open Public Workspace)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -3087,6 +3091,6 @@
   <!-- Hidden Global File Input for Excel (.xlsx / .xls / .csv / .txt) Bulk Whitelist Import -->
   <input type="file" id="global-excel-whitelist-input" accept=".xlsx,.xls,.csv,.txt" style="display:none;" />
 
-  <script src="app.js?v=3.5.0"></script>
+  <script src="app.js?v=3.6.0"></script>
 </body>
 </html>
