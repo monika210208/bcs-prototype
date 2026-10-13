@@ -1,0 +1,60 @@
+
+======================================================================
+SETUP — attribute authority issues attributes
+======================================================================
+  issued 'Role:Doctor' to dr_priya
+  issued 'Dept:Cardiology' to dr_priya
+  issued 'Role:Nurse' to nurse_arjun
+  issued 'Dept:Cardiology' to nurse_arjun
+
+======================================================================
+STEP 1-2 — owner encrypts file & uploads to off-chain storage
+======================================================================
+  policy: ['Role:Doctor', 'Dept:Cardiology']
+  file ciphertext (hex, truncated): 3ff9ce9afb0ebc5c91fb3d8dd4b3e3b9867920530859bbec0ad5ac453e25...
+  stored off-chain, content hash (IPFS-CID-equivalent): 47496b1b60653959...
+
+======================================================================
+STEP 3 — register file hash + policy on-chain
+======================================================================
+  fileId=file_001 recorded on-chain (owner=dr_priya, hash=47496b1b60653959...)
+
+======================================================================
+STEP 4-5 — access requests, evaluated automatically by the contract
+======================================================================
+  dr_priya -> GRANTED
+  nurse_arjun -> DENIED
+
+======================================================================
+STEP 6 — granted user retrieves ciphertext and decrypts locally
+======================================================================
+  dr_priya decrypted: 'Patient record 48213: diagnosis, treatment plan, prescription history.'
+
+  nurse_arjun's attributes do not satisfy the policy (missing Role:Doctor),
+  so nurse_arjun was denied on-chain in Step 5 and is never given ciphertext.
+  (crypto layer independently enforces this too: 'nurse_arjun' does not satisfy policy ['Role:Doctor', 'Dept:Cardiology'])
+
+======================================================================
+STEP 8 — owner revokes dr_priya's access
+======================================================================
+  dr_priya can_access now: False
+
+  Also revoking dr_priya's Dept:Cardiology attribute at the crypto layer
+  (this is what a real re-encryption/rotation step would trigger):
+  decrypt after revocation -> blocked: 'dr_priya' does not satisfy policy ['Role:Doctor', 'Dept:Cardiology']
+
+======================================================================
+STEP 7 — full audit trail (Audit & Logging Module)
+======================================================================
+
+--- On-chain audit log (Audit & Logging Module) ---
+ 1. AttributeIssued  {'user': 'dr_priya', 'attribute': 'Role:Doctor'}
+ 2. AttributeIssued  {'user': 'dr_priya', 'attribute': 'Dept:Cardiology'}
+ 3. AttributeIssued  {'user': 'nurse_arjun', 'attribute': 'Role:Nurse'}
+ 4. AttributeIssued  {'user': 'nurse_arjun', 'attribute': 'Dept:Cardiology'}
+ 5. FileUploaded     {'fileId': 'file_001', 'owner': 'dr_priya', 'contentHash': '47496b1b606539590893e396720b686b1c45358c82eee8aeb3654b1cfd7d125e'}
+ 6. AccessRequested  {'fileId': 'file_001', 'requester': 'dr_priya'}
+ 7. AccessGranted    {'fileId': 'file_001', 'requester': 'dr_priya'}
+ 8. AccessRequested  {'fileId': 'file_001', 'requester': 'nurse_arjun'}
+ 9. AccessDenied     {'fileId': 'file_001', 'requester': 'nurse_arjun', 'reason': 'missing attribute: Role:Doctor'}
+10. AccessRevoked    {'fileId': 'file_001', 'user': 'dr_priya'}

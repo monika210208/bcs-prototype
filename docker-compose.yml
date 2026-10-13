@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  bcs-app:
+    build: .
+    container_name: bcs-prototype
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    volumes:
+      # Optional: persist encrypted storage blobs outside container
+      - ./storage_data:/app/storage_data

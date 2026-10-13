@@ -1,0 +1,3092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniVault BCS — Universal Blockchain Cloud Storage & Access Control</title>
+  <link rel="stylesheet" href="styles.css?v=3.5.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+  <style>
+    /* ==========================================================================
+       CRITICAL EMBEDDED STYLES FOR BULLETPROOF CENTERING & LAYOUT
+       Guarantees perfect rendering even with aggressive browser caching
+       ========================================================================== */
+    :root {
+      --bg-primary: #080c14;
+      --bg-secondary: #0d1322;
+      --bg-card: #111a2e;
+      --bg-input: #0a0f1d;
+      --bg-surface: #0e1628;
+      --royal-blue: #6366f1;
+      --royal-blue-hover: #4f46e5;
+      --teal-bright: #22d3ee;
+      --emerald-success: #10b981;
+      --coral-danger: #f43f5e;
+      --text-main: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border-subtle: #1e293b;
+      --grad-primary: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+      --grad-hero: linear-gradient(135deg, #0d1322 0%, #171b38 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* Zero-Trust Front-Door Authentication Overlay & Centering */
+    .frontdoor-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: radial-gradient(circle at 50% 12%, #172554 0%, #080d1a 50%, #02050e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 16px;
+      overflow-y: auto;
+      box-sizing: border-box;
+      min-height: 100vh;
+      opacity: 1;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .frontdoor-overlay.hidden {
+      display: none !important;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000000 !important;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .frontdoor-error-banner {
+      background: rgba(244, 63, 94, 0.18);
+      border: 1px solid rgba(244, 63, 94, 0.65);
+      border-left: 4px solid #f43f5e;
+      border-radius: 8px;
+      padding: 11px 15px;
+      margin: 14px 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffe4e6;
+      font-size: 0.86rem;
+      font-weight: 600;
+      line-height: 1.4;
+      animation: frontdoorShakeError 0.35s ease;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
+    }
+
+    @keyframes frontdoorShakeError {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .form-input.input-error,
+    .form-select.input-error {
+      border-color: #f43f5e !important;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.35) !important;
+    }
+
+    .frontdoor-container {
+      width: 100%;
+      max-width: 600px;
+      margin: auto 0;
+      background: rgba(14, 21, 38, 0.95);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 18px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(99, 102, 241, 0.2);
+      padding: 36px;
+      position: relative;
+      box-sizing: border-box;
+      animation: frontdoorAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes frontdoorAppear {
+      from { transform: scale(0.96) translateY(12px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .frontdoor-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .frontdoor-brand .brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      flex-shrink: 0;
+    }
+
+    .frontdoor-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .frontdoor-subtitle {
+      font-size: 0.78rem;
+      color: var(--teal-bright);
+      font-weight: 600;
+      margin: 3px 0 0 0;
+      line-height: 1.3;
+    }
+
+    .frontdoor-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .frontdoor-tab {
+      flex: 1;
+      padding: 11px 16px;
+      border-radius: 8px;
+      background: rgba(14, 22, 40, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .frontdoor-tab:hover {
+      color: #ffffff;
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(22, 33, 58, 0.9);
+    }
+
+    .frontdoor-tab.active {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #ffffff;
+      border-color: #6366f1;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.45);
+    }
+
+    .frontdoor-pane-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    /* Demo Personas 2-Column Grid */
+    .demo-personas-box {
+      background: rgba(10, 16, 30, 0.65);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      box-sizing: border-box;
+    }
+
+    .demo-personas-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--teal-bright);
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+
+    .demo-personas-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 540px) {
+      .demo-personas-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .btn-demo-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(22, 33, 58, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .btn-demo-pill:hover {
+      background: rgba(30, 48, 86, 0.95);
+      border-color: #6366f1;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-main);
+      caret-color: var(--text-main);
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
+      background: var(--bg-input);
+      color: var(--text-main);
+      caret-color: var(--text-main);
+    }
+
+    /* Light Theme Input & Typing Text Visibility */
+    body.theme-light .form-input,
+    body.theme-light .form-select,
+    body.theme-light .form-textarea,
+    body.theme-light input,
+    body.theme-light textarea,
+    body.theme-light select {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      caret-color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    body.theme-light .form-input:focus,
+    body.theme-light .form-select:focus,
+    body.theme-light .form-textarea:focus,
+    body.theme-light input:focus,
+    body.theme-light textarea:focus,
+    body.theme-light select:focus {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      caret-color: #0f172a !important;
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+    }
+
+    body.theme-light .form-input::placeholder,
+    body.theme-light .form-textarea::placeholder,
+    body.theme-light input::placeholder,
+    body.theme-light textarea::placeholder {
+      color: #94a3b8 !important;
+      opacity: 1 !important;
+    }
+
+    .form-helper {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .form-helper code {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.76rem;
+    }
+
+    /* Buttons */
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      box-sizing: border-box;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(51, 65, 85, 0.95);
+      color: #ffffff;
+    }
+
+    .btn-teal {
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+    }
+
+    .btn-teal:hover {
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35);
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 6px 20px rgba(244, 63, 94, 0.5);
+      transform: translateY(-1px);
+    }
+
+    /* 2-Step Registration Components */
+    .register-step-progress {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .reg-step-badge {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(14, 22, 40, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+
+    .reg-step-badge.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    .reg-step-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1e293b;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .reg-step-badge.active .reg-step-circle {
+      background: #6366f1;
+      color: #ffffff;
+    }
+
+    .register-step-box {
+      background: rgba(10, 16, 30, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .register-step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-num {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(6, 182, 212, 0.2);
+      color: var(--teal-bright);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* Requester Scope Tabs */
+    .requester-scope-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .scope-tab-btn {
+      padding: 9px 16px;
+      border-radius: 8px;
+      background: rgba(14, 22, 40, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .scope-tab-btn:hover {
+      color: #ffffff;
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    .scope-tab-btn.active {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #ffffff;
+      border-color: #6366f1;
+      box-shadow: 0 0 14px rgba(99, 102, 241, 0.4);
+    }
+  </style>
+</head>
+<body class="theme-cyber">
+  <!-- Zero-Trust Front-Door Authentication Gate Overlay -->
+  <div id="frontdoor-auth-overlay" class="frontdoor-overlay">
+    <div class="frontdoor-container">
+      <div class="frontdoor-brand">
+        <div class="brand-icon" style="width:48px; height:48px; background:var(--grad-primary);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px; height:28px;">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="frontdoor-title">OmniVault BCS</h1>
+          <p class="frontdoor-subtitle">Zero-Trust Blockchain Cloud Storage & Access Control Gateway</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs: Sign In vs 2-Step Registration vs Forgot Password -->
+      <div class="frontdoor-tabs">
+        <button type="button" class="frontdoor-tab active" id="tab-frontdoor-login">
+          🔒 Authenticate / Sign In
+        </button>
+        <button type="button" class="frontdoor-tab" id="tab-frontdoor-register">
+          ✨ Create New Account (2-Step)
+        </button>
+        <button type="button" class="frontdoor-tab" id="tab-frontdoor-forgot">
+          🔑 Forgot Password
+        </button>
+      </div>
+
+      <!-- Panel 1: Sign In -->
+      <div id="frontdoor-pane-login" class="frontdoor-pane active">
+        <p class="frontdoor-pane-desc">
+          Zero-Trust Security Enforcement: Access to cloud workspaces, files, and audit logs requires verified cryptographic credentials.
+        </p>
+
+        <!-- Quick One-Click Demo Personas -->
+        <div class="demo-personas-box">
+          <span class="demo-personas-label">Quick 1-Click Demo Profiles</span>
+          <div class="demo-personas-list">
+            <button type="button" class="btn-demo-pill" data-uid="dr_priya" data-pwd="UserPass2026!" title="Metro General Hospital - Chief Cardiologist (Level-4)">
+              <span style="font-size:1.15rem;">🩺</span>
+              <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span style="font-weight:700; color:#fff;">Dr. Priya Sharma</span>
+                <span style="font-size:0.68rem; color:var(--teal-bright);">Metro Hospital • Level-4</span>
+              </div>
+            </button>
+            <button type="button" class="btn-demo-pill" data-uid="col_vance" data-pwd="ArmySecure2026!" title="Defense Cyber Command (DoD / Army) - Commander (Level-4)">
+              <span style="font-size:1.15rem;">🎖️</span>
+              <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span style="font-weight:700; color:#fff;">Col. Jack Vance</span>
+                <span style="font-size:0.68rem; color:var(--teal-bright);">Defense DoD • Level-4</span>
+              </div>
+            </button>
+            <button type="button" class="btn-demo-pill" data-uid="sarah_cfo" data-pwd="UserPass2026!" title="Apex Financial Corp - CFO (Level-4)">
+              <span style="font-size:1.15rem;">💼</span>
+              <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span style="font-weight:700; color:#fff;">Sarah Jenkins (CFO)</span>
+                <span style="font-size:0.68rem; color:var(--teal-bright);">Apex FinTech • Level-4</span>
+              </div>
+            </button>
+            <button type="button" class="btn-demo-pill" data-uid="alex_architect" data-pwd="UserPass2026!" title="Quantum Cyber Labs - Security Architect (Level-3)">
+              <span style="font-size:1.15rem;">🛡️</span>
+              <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span style="font-weight:700; color:#fff;">Alex Rivera (Architect)</span>
+                <span style="font-size:0.68rem; color:var(--teal-bright);">Cyber Labs • Level-3</span>
+              </div>
+            </button>
+            <button type="button" class="btn-demo-pill" data-uid="marcus_legal" data-pwd="UserPass2026!" title="Universal Commons - Legal Counsel (Level-3)">
+              <span style="font-size:1.15rem;">⚖️</span>
+              <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span style="font-weight:700; color:#fff;">Marcus Vance</span>
+                <span style="font-size:0.68rem; color:var(--teal-bright);">Universal • Level-3</span>
+              </div>
+            </button>
+            <button type="button" class="btn-demo-pill" data-uid="nurse_arjun" data-pwd="HospitalPass2026!" title="Metro General Hospital - Critical Care Nurse (Level-2)">
+              <span style="font-size:1.15rem;">💉</span>
+              <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span style="font-weight:700; color:#fff;">Nurse Arjun Patel</span>
+                <span style="font-size:0.68rem; color:var(--teal-bright);">Hospital • Level-2</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <form id="form-frontdoor-login" onsubmit="return false;" style="margin-top:16px;">
+          <div class="form-group">
+            <label class="form-label">Username / Unique ID</label>
+            <input type="text" id="frontdoor-login-user" class="form-input" placeholder="e.g. dr_priya or col_vance or sarah_cfo" required />
+          </div>
+          <div class="form-group" style="margin-top:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <label class="form-label" style="margin:0;">Account Password</label>
+              <button type="button" id="btn-open-forgot-password" style="background:none; border:none; color:var(--teal-bright); font-size:0.78rem; font-weight:700; cursor:pointer; padding:0; text-decoration:underline;">
+                🔑 Forgot Password?
+              </button>
+            </div>
+            <input type="password" id="frontdoor-login-password" class="form-input" placeholder="Enter your password..." required />
+            <span class="form-helper">Demo passwords: <code>UserPass2026!</code>, <code>HospitalPass2026!</code>, <code>ArmySecure2026!</code></span>
+          </div>
+          <div id="frontdoor-login-error-banner" class="frontdoor-error-banner" style="display:none;">
+            <span style="font-size:1.15rem; flex-shrink:0;">⚠️</span>
+            <span id="frontdoor-login-error-text"></span>
+          </div>
+          <button type="button" id="btn-submit-frontdoor-login" class="header-btn btn-primary" style="width:100%; margin-top:18px; justify-content:center; padding:12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>Authenticate & Unlock Cloud Vault</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Panel 2: Sequential 2-Step Registration -->
+      <div id="frontdoor-pane-register" class="frontdoor-pane" style="display:none;">
+        <p class="frontdoor-pane-desc">
+          Zero-Trust Onboarding: Create your cryptographic identity in Step 1, then choose your organization workspace in Step 2.
+        </p>
+
+        <form id="form-frontdoor-register" onsubmit="return false;">
+          <!-- Visual Step Progression Header -->
+          <div class="register-step-progress">
+            <div class="reg-step-badge active" id="badge-step-1">
+              <span class="reg-step-circle">1</span>
+              <span>Identity & Credentials</span>
+            </div>
+            <div class="reg-step-badge" id="badge-step-2">
+              <span class="reg-step-circle">2</span>
+              <span>Organization & Role</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Credentials Only -->
+          <div id="reg-step-1-container" class="register-step-box">
+            <div class="register-step-header">
+              <span class="step-num">Step 1 of 2</span>
+              <strong>Identity Credentials & Unique Username</strong>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+              First, establish your unique identity and secret password.
+            </p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;">
+              <div class="form-group">
+                <label class="form-label">Unique Username / ID</label>
+                <input type="text" id="frontdoor-reg-username" class="form-input" placeholder="e.g. capt_miller, analyst_eva" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="frontdoor-reg-name" class="form-input" placeholder="e.g. Capt. John Miller" required />
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;">
+              <div class="form-group">
+                <label class="form-label">Set Account Password</label>
+                <input type="password" id="frontdoor-reg-password" class="form-input" placeholder="Create strong password..." required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" id="frontdoor-reg-password-confirm" class="form-input" placeholder="Confirm password..." required />
+              </div>
+            </div>
+            <div id="frontdoor-reg-error-step1" class="frontdoor-error-banner" style="display:none;">
+              <span style="font-size:1.15rem; flex-shrink:0;">⚠️</span>
+              <span id="frontdoor-reg-error-text-step1"></span>
+            </div>
+            <button type="button" id="btn-reg-step1-next" class="header-btn btn-primary" style="width:100%; margin-top:16px; justify-content:center; padding:11px;">
+              <span>Next: Select Organization Workspace &rarr;</span>
+            </button>
+          </div>
+
+          <!-- Step 2: Organization Assignment -->
+          <div id="reg-step-2-container" class="register-step-box" style="display:none;">
+            <div class="register-step-header">
+              <span class="step-num">Step 2 of 2</span>
+              <strong>Organization Selection & Role Request</strong>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+              Select the workspace you want to participate in. The organization creator will review your membership, whitelist your username, and assign your Role & Confidentiality Clearance (Level-1 to Level-5).
+            </p>
+            <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:12px; margin-top:10px;">
+              <div class="form-group">
+                <label class="form-label">Target Organization Workspace</label>
+                <select id="frontdoor-reg-org" class="form-select">
+                  <!-- Populated via JS -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Requested Role</label>
+                <input type="text" id="frontdoor-reg-role" class="form-input" placeholder="e.g. Officer, Engineer, Doctor" />
+              </div>
+            </div>
+            <div id="frontdoor-reg-error-step2" class="frontdoor-error-banner" style="display:none;">
+              <span style="font-size:1.15rem; flex-shrink:0;">⚠️</span>
+              <span id="frontdoor-reg-error-text-step2"></span>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:16px;">
+              <button type="button" id="btn-reg-step2-back" class="header-btn btn-secondary" style="padding:10px 16px;">
+                <span>&larr; Back</span>
+              </button>
+              <button type="button" id="btn-submit-frontdoor-register" class="header-btn btn-teal" style="flex:1; justify-content:center; padding:10px 16px;">
+                <span>Complete 2-Step Registration & Join Organization</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Panel 3: Forgot Password / Credential Reset -->
+      <div id="frontdoor-pane-forgot" class="frontdoor-pane" style="display:none;">
+        <p class="frontdoor-pane-desc">
+          Account Recovery & Credential Reset: Verify your registered username and set a new password for your cryptographic vault account.
+        </p>
+
+        <form id="form-frontdoor-forgot" onsubmit="return false;">
+          <div class="register-step-box">
+            <div class="register-step-header">
+              <span class="step-num">Recovery</span>
+              <strong>Reset Account Password</strong>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+              Enter your registered username to verify your account and set a new password.
+            </p>
+
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label">Registered Username / Unique ID</label>
+              <div style="display:flex; gap:10px;">
+                <input type="text" id="frontdoor-forgot-username" class="form-input" placeholder="e.g. dr_priya, col_vance, or your username" required />
+                <button type="button" id="btn-verify-forgot-user" class="header-btn btn-secondary" style="white-space:nowrap;">
+                  🔍 Verify Account
+                </button>
+              </div>
+            </div>
+
+            <!-- Verified Account Info Card -->
+            <div id="forgot-user-verified-card" style="display:none; margin-top:10px; padding:10px 14px; border-radius:8px; background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.45); font-size:0.8rem;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <strong style="color:#10b981;">✅ Account Verified: <span id="forgot-verified-name"></span></strong>
+                <span id="forgot-verified-org" style="font-size:0.72rem; color:var(--teal-bright); font-weight:700;"></span>
+              </div>
+              <div style="margin-top:3px; font-size:0.72rem; color:var(--text-muted); font-family:monospace;" id="forgot-verified-did"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+              <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" id="frontdoor-forgot-new-password" class="form-input" placeholder="Enter new password (min 4 chars)..." required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" id="frontdoor-forgot-confirm-password" class="form-input" placeholder="Confirm new password..." required />
+              </div>
+            </div>
+
+            <div id="frontdoor-forgot-error-banner" class="frontdoor-error-banner" style="display:none;">
+              <span style="font-size:1.15rem; flex-shrink:0;">⚠️</span>
+              <span id="frontdoor-forgot-error-text"></span>
+            </div>
+
+            <div id="frontdoor-forgot-success-banner" style="display:none; background:rgba(16, 185, 129, 0.18); border:1px solid rgba(16, 185, 129, 0.65); border-left:4px solid #10b981; border-radius:8px; padding:11px 15px; margin:14px 0 8px 0; align-items:center; gap:10px; color:#d1fae5; font-size:0.86rem; font-weight:600;">
+              <span style="font-size:1.15rem; flex-shrink:0;">✅</span>
+              <span id="frontdoor-forgot-success-text"></span>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:16px;">
+              <button type="button" id="btn-forgot-back-to-login" class="header-btn btn-secondary" style="padding:10px 16px;">
+                <span>&larr; Back to Sign In</span>
+              </button>
+              <button type="button" id="btn-submit-forgot-password" class="header-btn btn-primary" style="flex:1; justify-content:center; padding:10px 16px;">
+                <span>🔄 Reset Password & Update Credentials</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container" id="app-container" style="display: none;">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <span class="brand-name">OmniVault BCS</span>
+          <span class="brand-badge">Universal Cloud &bull; MedShield BCS</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Core Portals</div>
+        <a class="nav-item active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+          <span>Executive Overview</span>
+        </a>
+
+        <a class="nav-item" data-view="uploader">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" x2="12" y1="3" y2="15"/>
+          </svg>
+          <span>Uploader Studio</span>
+          <span class="nav-counter" id="nav-uploader-badge">Upload</span>
+        </a>
+
+        <a class="nav-item" data-view="requester">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>Requester Portal</span>
+          <span class="nav-counter" id="nav-requester-badge">Request</span>
+        </a>
+
+        <a class="nav-item" data-view="organizations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-3"/>
+            <path d="M9 9h1"/>
+            <path d="M9 13h1"/>
+            <path d="M9 17h1"/>
+          </svg>
+          <span>Organizations Hub</span>
+          <span class="nav-counter" id="nav-org-count">4</span>
+        </a>
+
+        <a class="nav-item" data-view="org-portal" id="nav-item-org-portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Dedicated Org Page</span>
+          <span class="nav-counter" id="nav-org-portal-badge">Restricted</span>
+        </a>
+
+        <div class="nav-section-label">Technical Intelligence</div>
+        <a class="nav-item" data-view="estimator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>Technical Estimator</span>
+        </a>
+
+        <a class="nav-item" data-view="emergency">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 22 22 22"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Emergency Break-Glass</span>
+          <span class="nav-counter" id="nav-emergency-counter" style="background:var(--coral-danger); color:#fff; display:none;">!</span>
+        </a>
+
+        <div class="nav-section-label">Governance & Repository</div>
+        <a class="nav-item" data-view="files">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M12 18v-6"/>
+            <path d="m9 15 3-3 3 3"/>
+          </svg>
+          <span>Cloud Repository</span>
+          <span class="nav-counter" id="nav-file-count">6</span>
+        </a>
+
+        <a class="nav-item" data-view="users">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Identity & Attributes</span>
+          <span class="nav-counter" id="nav-user-count">8</span>
+        </a>
+
+        <a class="nav-item" data-view="audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="M6 6h10"/>
+            <path d="M6 10h10"/>
+            <path d="M6 14h6"/>
+          </svg>
+          <span>On-Chain Audit Log</span>
+        </a>
+
+        <a class="nav-item" data-view="benchmarks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/>
+            <line x1="12" x2="12" y1="20" y2="4"/>
+            <line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          <span>Gas & Benchmarks</span>
+        </a>
+      </nav>
+
+      <!-- Active Identity Card -->
+      <div class="sidebar-footer">
+        <div class="user-switcher-card">
+          <div class="user-switcher-header">
+            <span>Authenticated Identity</span>
+            <span class="user-dot"></span>
+          </div>
+          <!-- Hidden select for compatibility -->
+          <select id="active-user-select" class="user-switcher-select" style="display:none;" title="Active User Identity">
+            <!-- Dynamically populated -->
+          </select>
+          <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+            <strong id="sidebar-auth-username" style="font-size:0.85rem; color:var(--text-main);">dr_priya</strong>
+            <span id="sidebar-auth-clearance-badge" class="badge badge-indigo" style="font-size:0.68rem;">Level-4</span>
+          </div>
+          <div class="active-user-badge-row" style="margin-top:4px;">
+            <span id="active-user-role-badge" style="font-size:0.75rem; font-weight:700; color:var(--royal-blue-light);">Role: Chief Cardiologist</span>
+          </div>
+          <!-- Multi-Role Switcher for Current Identity -->
+          <div style="margin-top:8px;">
+            <label style="font-size:0.68rem; text-transform:uppercase; color:var(--text-dim); font-weight:700;">Switch Active Role</label>
+            <select id="active-user-role-select" class="role-switcher-select" title="Switch active role for current user">
+              <!-- Dynamically populated -->
+            </select>
+            <button type="button" class="btn-add-role" id="btn-open-add-role-modal" title="Add another role to this identity">
+              + Add Role to This Profile
+            </button>
+          </div>
+          <div id="active-user-attrs" style="display:flex; flex-wrap:wrap; gap:3px; margin-top:8px;"></div>
+          <button class="header-btn btn-danger btn-sm" id="btn-sidebar-signout" style="margin-top:10px; justify-content:center; width:100%; border-color:rgba(244,63,94,0.4);">
+            <span>🔒 Sign Out / Switch User</span>
+          </button>
+          <button class="header-btn btn-secondary btn-sm" id="btn-quick-new-user" style="margin-top:6px; justify-content:center; width:100%;">
+            <span>+ Register New Account</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Sticky Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-toggle-btn" id="mobile-toggle-btn" aria-label="Toggle navigation">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="page-breadcrumb">
+            <span>OmniVault BCS</span>
+            <span>/</span>
+            <span class="current" id="breadcrumb-current">Executive Overview</span>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Theme Picker Control -->
+          <div class="theme-selector-pill" title="Switch Visual Color Theme">
+            <button class="theme-opt-btn active" data-theme="cyber">Cyber</button>
+            <button class="theme-opt-btn" data-theme="slate">Slate</button>
+            <button class="theme-opt-btn" data-theme="emerald">Emerald</button>
+            <button class="theme-opt-btn" data-theme="light">Light</button>
+          </div>
+
+          <!-- Active User Capsule -->
+          <div class="user-capsule" id="header-user-capsule">
+            <div class="user-capsule-avatar" id="header-user-avatar">S</div>
+            <div style="display:flex; flex-direction:column; line-height:1.2;">
+              <span style="font-weight:700; color:var(--text-main);" id="header-user-name">Sarah Jenkins</span>
+              <span style="font-size:0.72rem; color:var(--teal-bright);" id="header-user-org">Apex Financial Corp</span>
+            </div>
+            <button class="header-btn btn-sm btn-secondary" id="btn-header-switch-user" style="padding:2px 8px; font-size:0.7rem;" title="Sign out of current account">🔒 Sign Out</button>
+          </div>
+
+          <div class="network-status-pill">
+            <span class="pulse-dot"></span>
+            <span>EVM Smart Ledger • Online</span>
+          </div>
+
+          <button class="header-btn btn-primary" id="btn-quick-upload">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" x2="12" y1="3" y2="15"/>
+            </svg>
+            <span>Encrypt & Upload</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Emergency Active Banner (Hidden unless break-glass is triggered) -->
+      <div id="emergency-header-alert" class="emergency-top-alert" style="display:none;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:1.2rem;">🚨</span>
+          <div>
+            <strong>CRITICAL BREAK-GLASS EMERGENCY OVERRIDE ACTIVE</strong>
+            <span id="emergency-banner-details" style="font-weight:400; margin-left:8px;">Incident: INC-9912 | Granted to user</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span>Remaining TTL: <strong id="emergency-banner-timer">14:59</strong></span>
+          <button type="button" class="header-btn btn-sm btn-secondary" onclick="switchView('emergency')">Open Console</button>
+          <button type="button" class="header-btn btn-sm btn-danger" id="btn-header-stop-emergency" onclick="window.resolveAllEmergencies()" title="Immediately stop and terminate all emergency break-glass overrides">⏹ Terminate Emergency</button>
+        </div>
+      </div>
+
+      <!-- View Containers -->
+      <main class="page-content">
+
+        <!-- 1. EXECUTIVE DASHBOARD VIEW -->
+        <section id="view-dashboard" class="content-view active">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--royal-blue-light);">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Cryptographic Access-Control System
+              </h1>
+              <p class="page-subtitle">Off-Chain Encrypted Storage (CP-ABE + IPFS/S3) + Smart-Contract-Enforced Access Ledger across Multi-Domain Workspaces</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-secondary" id="btn-refresh-dashboard">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span>Refresh Data</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Intent Action Gateway / Welcome Launchpad -->
+          <div class="launchpad-banner">
+            <div class="launchpad-header">
+              <div class="launchpad-tag">
+                <span class="launchpad-pulse"></span>
+                <span>OmniVault Action Gateway</span>
+              </div>
+              <h2 class="launchpad-title">What would you like to do?</h2>
+              <p class="launchpad-subtitle">Select your primary workflow below to get started immediately, or monitor executive metrics and cryptographic telemetry.</p>
+            </div>
+
+            <div class="launchpad-cards-grid">
+              <!-- Action Card 1: Upload & Encrypt -->
+              <div class="launchpad-card card-upload" onclick="switchView('uploader')">
+                <div class="launchpad-card-icon upload-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <div class="launchpad-card-content">
+                  <div class="launchpad-card-title-row">
+                    <h3>Upload & Encrypt File</h3>
+                    <span class="launchpad-pill pill-upload">Step 1</span>
+                  </div>
+                  <p>Client-side encrypt confidential files using CP-ABE policies, pin to IPFS / S3, and register cryptographic metadata on smart contract.</p>
+                  <button type="button" class="launchpad-btn btn-upload-action">
+                    <span>Launch Uploader Studio</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action Card 2: Request Access & Decrypt -->
+              <div class="launchpad-card card-access" onclick="switchView('requester')">
+                <div class="launchpad-card-icon access-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <div class="launchpad-card-content">
+                  <div class="launchpad-card-title-row">
+                    <h3>Request Access & Decrypt</h3>
+                    <span class="launchpad-pill pill-access">Step 2</span>
+                  </div>
+                  <p>Present identity attributes or zero-knowledge proofs to evaluate smart contract access policies and decrypt recovered plaintext.</p>
+                  <button type="button" class="launchpad-btn btn-access-action">
+                    <span>Open Requester Portal</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action Card 3: Organizations Hub -->
+              <div class="launchpad-card card-org" onclick="switchView('organizations')">
+                <div class="launchpad-card-icon org-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21h18"/>
+                    <path d="M5 21V7l8-4v18"/>
+                    <path d="M19 21V11l-6-3"/>
+                  </svg>
+                </div>
+                <div class="launchpad-card-content">
+                  <div class="launchpad-card-title-row">
+                    <h3>Organization Hub</h3>
+                    <span class="launchpad-pill pill-org">Private Enclaves</span>
+                  </div>
+                  <p>Access isolated multi-tenant enterprise workspaces (Hospitals, FinTech, Cyber Labs) secured by worker passwords and role boundaries.</p>
+                  <button type="button" class="launchpad-btn btn-org-action">
+                    <span>Enter Organizations Hub</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action Card 4: Technical Estimator -->
+              <div class="launchpad-card card-tech" onclick="switchView('estimator')">
+                <div class="launchpad-card-icon tech-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div class="launchpad-card-content">
+                  <div class="launchpad-card-title-row">
+                    <h3>Technical Estimator</h3>
+                    <span class="launchpad-pill pill-tech">Analytics</span>
+                  </div>
+                  <p>Simulate cryptographic performance, gas consumption, AES-256 latency, and emergency break-glass protocols.</p>
+                  <button type="button" class="launchpad-btn btn-tech-action">
+                    <span>Launch Estimator</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI Metric Cards Grid -->
+          <div class="kpi-grid">
+            <div class="kpi-card blue">
+              <div class="kpi-top">
+                <span class="kpi-label">Protected Files</span>
+                <div class="kpi-icon-wrap blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-files">6</div>
+              <div class="kpi-footer">
+                <span class="badge badge-blue">Multi-Domain CIDs</span>
+                <span>Content-addressed</span>
+              </div>
+            </div>
+
+            <div class="kpi-card emerald">
+              <div class="kpi-top">
+                <span class="kpi-label">Access Granted</span>
+                <div class="kpi-icon-wrap emerald">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-grants">4</div>
+              <div class="kpi-footer">
+                <span class="badge badge-emerald">Policy Satisfied</span>
+                <span>Decryption enabled</span>
+              </div>
+            </div>
+
+            <div class="kpi-card coral">
+              <div class="kpi-top">
+                <span class="kpi-label">Security Denials</span>
+                <div class="kpi-icon-wrap coral">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-denials">2</div>
+              <div class="kpi-footer">
+                <span class="badge badge-coral">Contract Enforced</span>
+                <span>Zero ciphertext leaked</span>
+              </div>
+            </div>
+
+            <div class="kpi-card teal">
+              <div class="kpi-top">
+                <span class="kpi-label">Active Users</span>
+                <div class="kpi-icon-wrap teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-users">8</div>
+              <div class="kpi-footer">
+                <span class="badge badge-teal">Multi-Organization</span>
+                <span>Attribute credentials</span>
+              </div>
+            </div>
+
+            <div class="kpi-card indigo">
+              <div class="kpi-top">
+                <span class="kpi-label">Revocation Speedup</span>
+                <div class="kpi-icon-wrap indigo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-speedup">2,043x</div>
+              <div class="kpi-footer">
+                <span class="badge badge-indigo">0.12ms Latency</span>
+                <span>vs Full re-encryption</span>
+              </div>
+            </div>
+
+            <div class="kpi-card amber">
+              <div class="kpi-top">
+                <span class="kpi-label">Simulated Gas</span>
+                <div class="kpi-icon-wrap amber">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-gas">712k</div>
+              <div class="kpi-footer">
+                <span class="badge badge-amber">EVM Optimized</span>
+                <span>Only hashes & policies</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Portals Banner -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px;">
+            <div class="panel-card" style="border-left:4px solid var(--royal-blue); cursor:pointer;" onclick="switchView('uploader')">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main);">📤 Data Uploader Studio</h3>
+                <span class="badge badge-blue">Uploader View</span>
+              </div>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Encrypt and register documents with custom attribute policies, set importance ratings, choose target organization, and monitor active grants.</p>
+              <div style="margin-top:auto; color:var(--royal-blue-light); font-weight:700; font-size:0.8rem;">Enter Uploader Studio &rarr;</div>
+            </div>
+
+            <div class="panel-card" style="border-left:4px solid var(--teal-accent); cursor:pointer;" onclick="switchView('requester')">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main);">📥 Access Requester Portal</h3>
+                <span class="badge badge-teal">Requester View</span>
+              </div>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Any visitor or worker can log in with their Unique ID, browse catalog files, request access, verify credentials, decrypt, and download files.</p>
+              <div style="margin-top:auto; color:var(--teal-bright); font-weight:700; font-size:0.8rem;">Enter Requester Portal &rarr;</div>
+            </div>
+
+            <div class="panel-card" style="border-left:4px solid var(--purple-accent); cursor:pointer;" onclick="switchView('organizations')">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main);">🏢 Organizations & Workspaces</h3>
+                <span class="badge badge-indigo">Multi-Tenant</span>
+              </div>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Create custom organizational spaces (e.g. Metro Hospital, Apex FinTech) with user & password restrictions for specialized worker isolation.</p>
+              <div style="margin-top:auto; color:#a78bfa; font-weight:700; font-size:0.8rem;">Manage Organizations &rarr;</div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="analytics-grid">
+            <div class="panel-card">
+              <div class="panel-header">
+                <div>
+                  <h3 class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Smart Contract Policy Decisions & Activity
+                  </h3>
+                  <p class="panel-desc">Real-time breakdown of access grants, security denials, uploads, and revocations</p>
+                </div>
+              </div>
+              <div class="chart-container" id="chart-decisions">
+                <!-- SVG dynamically injected -->
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-header">
+                <div>
+                  <h3 class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    EVM Transaction Gas Profile
+                  </h3>
+                  <p class="panel-desc">Simulated gas units consumed per smart contract call</p>
+                </div>
+              </div>
+              <div class="chart-container" id="chart-gas">
+                <!-- Gas chart dynamically injected -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. DATA UPLOADER STUDIO VIEW -->
+        <section id="view-uploader" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" x2="12" y1="3" y2="15"/>
+                </svg>
+                Data Uploader Studio
+              </h1>
+              <p class="page-subtitle">Dedicated portal for content owners to encrypt, classify importance, set policy rules, and register assets on blockchain</p>
+            </div>
+            <div class="page-actions">
+              <span class="badge badge-blue">Logged in as: <strong id="uploader-current-id">sarah_cfo</strong></span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <!-- Upload Configuration Panel -->
+            <div class="panel-card">
+              <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">1. Encrypt & Upload New Asset</h3>
+              <form id="upload-form">
+                <div class="form-group">
+                  <label class="form-label">File Blockchain Identifier</label>
+                  <input type="text" id="upload-file-id" class="form-input" placeholder="e.g. file_corporate_007" required />
+                  <span class="form-helper">Unique key registered on the AccessControl smart contract</span>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;">
+                  <div class="form-group">
+                    <label class="form-label">Document Name</label>
+                    <input type="text" id="upload-file-name" class="form-input" placeholder="e.g. treasury_reserve_q3.pdf" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Data Classification</label>
+                    <select id="upload-file-type" class="form-select">
+                      <option value="Financial & Treasury">Financial & Treasury</option>
+                      <option value="AI Model & Patent">AI Model & Patent</option>
+                      <option value="Hospital & Clinical">Hospital & Clinical Record</option>
+                      <option value="Corporate Governance">Corporate Governance & Legal</option>
+                      <option value="Security Manifest">Security Manifest & Audit</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Importance & Sensitivity Engine -->
+                <div class="form-group" style="margin-top:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="form-label" style="margin-bottom:0;">Asset Importance & Sensitivity Rating</label>
+                    <button type="button" class="btn-sm btn-outline" id="btn-open-custom-classification-modal" style="font-size:0.75rem; padding:2px 8px; cursor:pointer;">
+                      + Custom Classification
+                    </button>
+                  </div>
+                  <select id="upload-importance" class="form-select">
+                    <!-- Populated dynamically via JS -->
+                    <option value="Tier-0 Sovereign Critical">Tier-0 Sovereign Critical (Top Secret / Immediate Audit)</option>
+                    <option value="Tier-1 High Enterprise" selected>Tier-1 High Enterprise (Confidential Business / Clinical)</option>
+                    <option value="Tier-2 Medium Operational">Tier-2 Medium Operational (Restricted Internal Team)</option>
+                    <option value="Tier-3 Standard Public">Tier-3 Standard Public (Standard Clearance)</option>
+                  </select>
+                </div>
+
+                <!-- Target Organization -->
+                <div class="form-group" style="margin-top:12px;">
+                  <label class="form-label">Target Organization Workspace</label>
+                  <select id="upload-organization-select" class="form-select">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-top:12px;">
+                  <label class="form-label">Description & Context</label>
+                  <input type="text" id="upload-description" class="form-input" placeholder="e.g. Q3 audited multi-currency reserve accounts and risk profile" />
+                </div>
+
+                <div class="form-group" style="margin-top:12px;">
+                  <label class="form-label">Data Owner Identity</label>
+                  <select id="upload-owner" class="form-select">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+
+                <!-- Policy Builder -->
+                <div class="form-group" style="margin-top:12px;">
+                  <label class="form-label">Required Access Policy (Attributes & Boolean Logic)</label>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                    <button type="button" class="btn-sm btn-secondary policy-preset-btn" data-policy="Role:Finance,Clearance:High">Finance Execs</button>
+                    <button type="button" class="btn-sm btn-secondary policy-preset-btn" data-policy="Role:Engineer,Clearance:High">Tech Architects</button>
+                    <button type="button" class="btn-sm btn-secondary policy-preset-btn" data-policy="Org:MetroHospital,Role:Doctor">Hospital Doctors</button>
+                    <button type="button" class="btn-sm btn-secondary policy-preset-btn" data-policy="Role:Auditor,Dept:Compliance">Compliance Auditors</button>
+                  </div>
+                  <input type="text" id="upload-policy-input" class="form-input" placeholder="e.g. Role:Finance AND Clearance:High" required />
+
+                  <div class="visual-policy-builder" style="margin-top:8px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                      <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Tokens:</span>
+                      <button type="button" class="policy-op-btn" onclick="appendPolicyToken(' AND ')">AND</button>
+                      <button type="button" class="policy-op-btn" onclick="appendPolicyToken(' OR ')">OR</button>
+                      <button type="button" class="policy-op-btn" onclick="appendPolicyToken(' ( ')">(</button>
+                      <button type="button" class="policy-op-btn" onclick="appendPolicyToken(' ) ')">)</button>
+                      <button type="button" class="header-btn btn-sm btn-teal" style="margin-left:auto;" onclick="evaluateActivePolicy()">Test Satisfaction</button>
+                    </div>
+                    <div id="policy-eval-result" style="margin-top:6px;"></div>
+                  </div>
+                </div>
+
+                <!-- Whitelisted Usernames & Excel Bulk Import -->
+                <div class="form-group" style="margin-top:12px; background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+                    <label class="form-label" style="margin-bottom:0;">Whitelisted Usernames / Names (Direct Access & Emergency Whitelist)</label>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                      <button type="button" class="header-btn btn-sm btn-teal" onclick="triggerExcelImportForInput('upload-authorized-users')" title="Upload an Excel (.xlsx, .xls, .csv) file containing a list of names or usernames">
+                        📊 Upload Excel (.xlsx / .csv) of Names
+                      </button>
+                      <button type="button" class="header-btn btn-sm btn-secondary" onclick="downloadSampleWhitelistExcel()" title="Download a sample Excel (.xlsx) sheet with names alone">
+                        📥 Sample Excel
+                      </button>
+                    </div>
+                  </div>
+                  <input type="text" id="upload-authorized-users" class="form-input" placeholder="Enter names or upload Excel (e.g. dr_priya, nurse_arjun, Anita Desai)..." />
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:6px;">
+                    <span class="form-helper" style="margin-top:0;">Accepts Excel spreadsheets (.xlsx / .csv) containing names alone, or comma-separated names.</span>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; color:var(--text-main); cursor:pointer; font-weight:600;">
+                      <input type="checkbox" id="upload-also-emergency-whitelist" checked style="accent-color:var(--royal-blue);" />
+                      Also whitelist these names for Emergency Break-Glass
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Payload Content -->
+                <div class="form-group" style="margin-top:12px;">
+                  <label class="form-label">File Content to Encrypt</label>
+                  <div class="upload-mode-tabs">
+                    <button type="button" class="upload-mode-tab active" id="tab-mode-file">File Dropzone</button>
+                    <button type="button" class="upload-mode-tab" id="tab-mode-text">Plaintext Payload</button>
+                  </div>
+
+                  <div id="file-dropzone-container">
+                    <div class="file-dropzone" id="file-dropzone">
+                      <div class="file-dropzone-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                      </div>
+                      <div style="font-weight:700; color:var(--text-main);">Click or drag document to encrypt</div>
+                      <div style="font-size:0.78rem; color:var(--text-muted);">Supports any file: PDF, JSON, DOCX, CSV, DICOM, Images</div>
+                    </div>
+                    <input type="file" id="upload-file-input" style="display:none;" />
+                    <div id="file-selected-card" class="file-selected-card" style="display:none; margin-top:8px;">
+                      <div>
+                        <strong id="file-selected-name" style="color:var(--text-main);">document.pdf</strong>
+                        <div id="file-selected-size" style="font-size:0.75rem; color:var(--text-muted);">142 KB</div>
+                      </div>
+                      <button type="button" class="header-btn btn-sm btn-secondary" id="btn-change-file">Change File</button>
+                    </div>
+                  </div>
+
+                  <div id="plaintext-container" style="display:none;">
+                    <textarea id="upload-plaintext" class="form-textarea" placeholder="Paste sensitive confidential data here..."></textarea>
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:18px;">
+                  <button type="button" class="header-btn btn-secondary" id="btn-upload-fill-sample">Fill Sample Data</button>
+                  <button type="submit" class="header-btn btn-primary" id="btn-submit-upload">
+                    <span>Encrypt & Register on Blockchain</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Uploader's Managed Files Panel -->
+            <div class="panel-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">2. Files Owned by Logged-in Uploader</h3>
+                <span class="badge badge-teal" id="uploader-files-count">3 Files</span>
+              </div>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Assets currently owned by your identity. Manage active grants, trigger emergency per-file kill switches, or restore access.</p>
+              
+              <div class="table-responsive" style="margin-top:10px;">
+                <table class="bcs-table">
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Org</th>
+                      <th>Importance</th>
+                      <th>Status</th>
+                      <th>Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody id="uploader-files-table-body">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. ACCESS REQUESTER PORTAL VIEW -->
+        <section id="view-requester" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Access Requester Portal
+              </h1>
+              <p class="page-subtitle">Any user can register their Unique ID, review cloud assets, request authorization, verify cryptographic credentials, and decrypt approved files</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-primary" id="btn-requester-register-modal">
+                <span>+ Register New Requester ID</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Requester Identity Wallet Card -->
+          <div class="panel-card" style="background:var(--grad-hero); border-color:rgba(99, 102, 241, 0.4);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:16px;">
+                <div class="brand-icon" style="background:var(--grad-primary);">
+                  <span id="requester-avatar" style="font-size:1.1rem; font-weight:800;">U</span>
+                </div>
+                <div>
+                  <h3 style="font-size:1.15rem; font-weight:800; color:var(--text-main);" id="requester-name-display">Alex Rivera</h3>
+                  <div style="font-size:0.78rem; color:var(--text-muted); font-family:monospace;" id="requester-did-display">did:bcs:991204a8f...</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <span class="badge badge-blue" id="requester-org-badge">Org: Quantum Cyber Labs</span>
+                <span class="badge badge-indigo" id="requester-clearance-badge">Level-4 Confidential</span>
+                <button class="header-btn btn-sm btn-teal" id="btn-requester-inspect-vc">View Verifiable Credentials</button>
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">My Cryptographic Attributes:</span>
+              <div id="requester-attrs-pill-box" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <!-- Available Files Catalog -->
+          <!-- Scope Segmented Controls: Universal vs My Org vs Emergency -->
+          <div class="requester-scope-tabs" style="margin-top:20px;">
+            <button type="button" class="scope-tab-btn active" data-scope="all" id="scope-btn-all">
+              📂 All Permitted Files
+            </button>
+            <button type="button" class="scope-tab-btn" data-scope="universal" id="scope-btn-universal">
+              🌐 Universal Commons (Public / No Password)
+            </button>
+            <button type="button" class="scope-tab-btn" data-scope="org" id="scope-btn-my-org">
+              🏢 My Organization Files
+            </button>
+            <button type="button" class="scope-tab-btn" data-scope="emergency" id="scope-btn-emergency">
+              🚨 Emergency Whitelisted Files
+            </button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-toolbar">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="requester-search-input" placeholder="Search files, policies, or organizations..." />
+              </div>
+              <div class="table-filter-group">
+                <select id="requester-org-filter" class="filter-select">
+                  <option value="all">All Organizations</option>
+                  <!-- Options populated via JS -->
+                </select>
+                <select id="requester-importance-filter" class="filter-select">
+                  <option value="all">All Importance Levels</option>
+                  <option value="Tier-0 Sovereign Critical">Tier-0 Sovereign</option>
+                  <option value="Tier-1 High Enterprise">Tier-1 Enterprise</option>
+                  <option value="Tier-2 Medium Operational">Tier-2 Operational</option>
+                  <option value="Tier-3 Standard Public">Tier-3 Public</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="bcs-table">
+                <thead>
+                  <tr>
+                    <th>File Identifier</th>
+                    <th>Document Name</th>
+                    <th>Organization</th>
+                    <th>Importance</th>
+                    <th>Required Policy</th>
+                    <th>Access Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="requester-files-table-body">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Decrypted Payload Results Box (When unlocked) -->
+          <div id="requester-decrypt-result-box" class="panel-card" style="display:none; margin-top:20px; border-left:4px solid var(--emerald-success);">
+            <!-- Active File Session Dwell Timing Bar -->
+            <div class="file-session-timer-bar" id="requester-session-timer-bar">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="session-pulse"></span>
+                <span style="font-size:0.84rem; font-weight:700; color:var(--text-main);">
+                  Active File Inspection Session:
+                </span>
+                <span class="font-mono" style="font-size:0.95rem; font-weight:800; color:var(--emerald-success);" id="requester-session-stopwatch">00:00</span>
+                <span style="font-size:0.75rem; color:var(--text-muted);">(Real-time dwell tracking committed to on-chain Merkle audit trail)</span>
+              </div>
+              <button type="button" class="header-btn btn-sm btn-teal" id="btn-finish-file-session">
+                <span>Finish Session & Log Duration</span>
+              </button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <span class="badge badge-emerald">DECRYPTION SUCCESSFUL ✓</span>
+                <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-top:6px;" id="decrypted-result-filename">filename.enc</h3>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <button class="header-btn btn-sm btn-primary" id="btn-download-decrypted-file">Download Plaintext File</button>
+                <button class="header-btn btn-sm btn-secondary" id="btn-copy-plaintext">Copy to Clipboard</button>
+                <button type="button" class="header-btn btn-sm btn-danger" id="btn-close-requester-decrypted-box" style="border-color:rgba(244,63,94,0.4);" title="Close and Lock Plaintext Viewer">✕ Close & Lock File</button>
+              </div>
+            </div>
+            <div class="vc-display-card" id="decrypted-plaintext-content" style="margin-top:12px;"></div>
+          </div>
+        </section>
+
+        <!-- 4. ORGANIZATIONS & WORKSPACES VIEW -->
+        <section id="view-organizations" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 21h18"/>
+                  <path d="M5 21V7l8-4v18"/>
+                  <path d="M19 21V11l-6-3"/>
+                </svg>
+                Organizations & Workspaces
+              </h1>
+              <p class="page-subtitle">Multi-tenant organizational workspaces (e.g. Hospital, FinTech, Tech Labs) with isolated worker roles, clearance, and password restrictions</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-primary" id="btn-open-create-org-modal">
+                <span>+ Create New Organization Workspace</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Organizations Grid -->
+          <div class="org-card-grid" id="org-cards-container">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Selected Organization Workspace Partition -->
+          <div id="org-workspace-partition" class="panel-card" style="display:none; margin-top:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <span class="badge badge-indigo" id="active-org-sector-tag">Healthcare & Clinical</span>
+                <h2 style="font-size:1.35rem; font-weight:800; color:var(--text-main); margin-top:6px;" id="active-org-name-title">Metro General Hospital Workspace</h2>
+                <p style="font-size:0.84rem; color:var(--text-muted);" id="active-org-desc">Private clinical network restricted to verified doctors and nurses.</p>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <span class="badge badge-emerald" id="active-org-lock-status">Unlocked for Current Session</span>
+                <button class="header-btn btn-sm btn-danger" id="btn-org-emergency-lockdown">Emergency Org Lockdown</button>
+              </div>
+            </div>
+
+            <!-- Organization Files Filtered List -->
+            <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin-top:16px;">Files Isolated to this Organization:</h4>
+            <div class="table-responsive" style="margin-top:8px;">
+              <table class="bcs-table">
+                <thead>
+                  <tr>
+                    <th>File ID</th>
+                    <th>Document</th>
+                    <th>Owner</th>
+                    <th>Importance</th>
+                    <th>Policy</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="org-workspace-files-body">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4b. DEDICATED ORGANIZATION PAGE (WORKER-ONLY ISOLATED WORKSPACE) -->
+        <section id="view-org-portal" class="content-view" style="display:none;">
+          <!-- Top Organization Switcher & Creation Bar -->
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Dedicated Organization Workspace Page
+              </h1>
+              <p class="page-subtitle">Private, partitioned workspace restricted exclusively to verified workers of this specific organization</p>
+            </div>
+            <div class="page-actions" style="display:flex; gap:10px; align-items:center;">
+              <select id="org-portal-select" class="form-select" style="min-width:220px; font-weight:700;">
+                <!-- Populated via JS -->
+              </select>
+              <button class="header-btn btn-primary" id="btn-org-portal-create-new">
+                <span>+ Create Organization Page</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. LOCKED STATE: Worker Access Security Gate -->
+          <div id="org-gate-container" style="display:none;">
+            <div class="org-gate-card">
+              <div class="org-gate-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <span class="badge badge-coral" id="gate-sector-badge">Restricted Private Enclave</span>
+              <h2 style="font-size:1.35rem; font-weight:800; color:var(--text-main); margin-top:10px;" id="gate-org-title">
+                Metro General Hospital Workspace
+              </h2>
+              <p style="font-size:0.84rem; color:var(--text-muted); margin-top:8px;">
+                This page is private and restricted strictly to verified workers. Outsiders and unauthorized users cannot view records, upload data, or participate in this workspace.
+              </p>
+
+              <div style="background:var(--bg-surface); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle); margin:18px 0; text-align:left;">
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">ORGANIZATION GOVERNANCE & SECURITY RESTRICTIONS:</div>
+                <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:0.82rem;">
+                  <span>Organization Creator:</span>
+                  <strong style="color:var(--text-main);" id="gate-org-creator">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:0.82rem;">
+                  <span>Whitelisted Workers:</span>
+                  <strong style="color:var(--emerald-success);" id="gate-whitelisted-count">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:0.82rem;">
+                  <span>Allowed Worker Roles:</span>
+                  <strong style="color:var(--text-main);" id="gate-allowed-roles">Doctors, Surgeons, Nurses</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:0.82rem;">
+                  <span>Minimum Clearance:</span>
+                  <strong style="color:var(--royal-blue-light);" id="gate-min-clearance">Level-2 Restricted</strong>
+                </div>
+              </div>
+
+              <!-- Worker Verification Form -->
+              <form id="form-org-gate-login" onsubmit="return false;" style="text-align:left;">
+                <div class="form-group">
+                  <label class="form-label">Select Worker Identity</label>
+                  <select id="gate-worker-user-select" class="form-select">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                  <label class="form-label">Organization Worker Password</label>
+                  <input type="password" id="gate-worker-password-input" class="form-input" placeholder="Enter worker password..." required />
+                  <span class="form-helper" id="gate-password-hint">Enter the password established by this organization.</span>
+                </div>
+                <div class="form-group" style="margin-top:10px;">
+                  <label style="display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-muted); cursor:pointer;">
+                    <input type="checkbox" id="gate-remember-session" checked />
+                    <span>Keep unlocked for current session (Uncheck to require password on every visit)</span>
+                  </label>
+                </div>
+                <button type="button" id="btn-submit-org-gate-login" class="header-btn btn-primary" style="width:100%; margin-top:16px; justify-content:center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  <span>Authenticate & Enter Workspace Page</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2. UNLOCKED STATE: Dedicated Worker Portal -->
+          <div id="org-unlocked-container" style="display:none;">
+            <!-- Hero Organization Header Banner -->
+            <div class="org-portal-hero">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                  <div class="brand-icon" style="background:var(--grad-primary); width:48px; height:48px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-3"/></svg>
+                  </div>
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main);" id="portal-org-name">Metro General Hospital</h2>
+                      <span class="badge badge-emerald">Verified Worker Active ✓</span>
+                    </div>
+                    <p style="font-size:0.84rem; color:var(--text-muted); margin-top:4px;" id="portal-org-desc">
+                      Private clinical network restricted to verified doctors and nurses.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Worker Capsule & Controls -->
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <div class="user-capsule" style="background:var(--bg-elevated);">
+                    <div class="user-avatar" id="portal-worker-avatar">D</div>
+                    <div class="user-details">
+                      <span class="user-name" id="portal-worker-name">Dr. Priya Sharma</span>
+                      <span class="user-role" id="portal-worker-role">Chief Cardiologist</span>
+                    </div>
+                  </div>
+                  <button type="button" class="header-btn btn-sm btn-secondary" id="btn-org-portal-lock" style="border-color:var(--border-light);">
+                    <span>🔒 Lock & Sign Out</span>
+                  </button>
+                  <button type="button" class="header-btn btn-sm btn-danger" id="btn-org-portal-lockdown">
+                    <span>Quarantine Org</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Org Page Subnavigation Tabs -->
+            <div class="org-portal-subnav">
+              <button type="button" class="org-portal-tab-btn active" data-org-tab="repo">
+                📁 Private File Repository (<span id="portal-file-count">2</span>)
+              </button>
+              <button type="button" class="org-portal-tab-btn" data-org-tab="upload">
+                📤 Worker Uploader Studio
+              </button>
+              <button type="button" class="org-portal-tab-btn" data-org-tab="workers">
+                👥 Worker Directory (<span id="portal-worker-count">4</span>)
+              </button>
+              <button type="button" class="org-portal-tab-btn" data-org-tab="audit">
+                ⏱️ Org Audit & Time Spent Log
+              </button>
+            </div>
+
+            <!-- SUBPANE 1: Private File Repository -->
+            <div id="org-pane-repo" class="org-pane">
+              <div class="table-card">
+                <div class="table-responsive">
+                  <table class="bcs-table">
+                    <thead>
+                      <tr>
+                        <th>File Identifier</th>
+                        <th>Document Name</th>
+                        <th>Owner</th>
+                        <th>Importance</th>
+                        <th>Required Policy</th>
+                        <th>Access Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="org-portal-files-tbody">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Dedicated Org Decrypted Viewer with Dwell Timer -->
+              <div id="org-decrypt-result-box" class="panel-card" style="display:none; margin-top:20px; border-left:4px solid var(--emerald-success);">
+                <div class="file-session-timer-bar">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="session-pulse"></span>
+                    <span style="font-size:0.84rem; font-weight:700; color:var(--text-main);">Active Reading Session:</span>
+                    <span class="font-mono" style="font-size:0.95rem; font-weight:800; color:var(--emerald-success);" id="org-session-stopwatch">00:00</span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">(Real-time duration logged to organization audit trail)</span>
+                  </div>
+                  <button type="button" class="header-btn btn-sm btn-teal" id="btn-org-finish-session">
+                    <span>Finish Session & Log Duration</span>
+                  </button>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <span class="badge badge-emerald">DECRYPTED & VERIFIED ✓</span>
+                    <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-top:4px;" id="org-decrypted-filename">file.enc</h3>
+                  </div>
+                  <div style="display:flex; gap:10px;">
+                    <button class="header-btn btn-sm btn-primary" id="btn-org-download-file">Download Plaintext</button>
+                    <button class="header-btn btn-sm btn-secondary" id="btn-org-copy-file">Copy Text</button>
+                    <button type="button" class="header-btn btn-sm btn-danger" id="btn-close-org-decrypted-box" style="border-color:rgba(244,63,94,0.4);" title="Close and Lock Plaintext Viewer">✕ Close & Lock File</button>
+                  </div>
+                </div>
+                <div class="vc-display-card" id="org-decrypted-content" style="margin-top:12px;"></div>
+              </div>
+            </div>
+
+            <!-- SUBPANE 2: Worker Uploader Studio -->
+            <div id="org-pane-upload" class="org-pane" style="display:none;">
+              <div class="panel-card">
+                <h3 style="font-size:1.15rem; font-weight:800; color:var(--text-main);">Upload Protected File to this Organization</h3>
+                <p style="font-size:0.82rem; color:var(--text-muted);">Uploaded data is encrypted with CP-ABE and isolated to this organization's workspace.</p>
+
+                <form id="form-org-upload" style="margin-top:16px;">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="form-group">
+                      <label class="form-label">Document File Name</label>
+                      <input type="text" id="org-upload-name" class="form-input" placeholder="e.g. internal_operating_procedure.pdf" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Importance Tier</label>
+                      <select id="org-upload-importance" class="form-select">
+                        <option value="Tier-0 Sovereign Critical">Tier-0 Sovereign Critical</option>
+                        <option value="Tier-1 High Enterprise" selected>Tier-1 High Enterprise</option>
+                        <option value="Tier-2 Medium Operational">Tier-2 Medium Operational</option>
+                        <option value="Tier-3 Standard Public">Tier-3 Standard Public</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-top:12px;">
+                    <label class="form-label">Access Policy Expression (Restricted to Org Personnel)</label>
+                    <div id="org-upload-policy-presets" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
+                    <input type="text" id="org-upload-policy" class="form-input" placeholder="e.g. Role:Doctor AND Dept:Cardiology" required />
+                  </div>
+
+                  <div class="form-group" style="margin-top:12px;">
+                    <label class="form-label">Confidential Content</label>
+                    <textarea id="org-upload-content" class="form-textarea" placeholder="Paste or type confidential organization payload..." required></textarea>
+                  </div>
+
+                  <button type="submit" class="header-btn btn-primary" style="margin-top:16px;">
+                    <span>Encrypt & Commit to Organization Ledger</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- SUBPANE 3: Worker Directory -->
+            <div id="org-pane-workers" class="org-pane" style="display:none;">
+              <div class="panel-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                  <div>
+                    <h3 style="font-size:1.15rem; font-weight:800; color:var(--text-main);">Organization Registered Personnel</h3>
+                    <p style="font-size:0.82rem; color:var(--text-muted);">Workers authorized to collaborate and access documents in this partition.</p>
+                  </div>
+                  <button type="button" class="header-btn btn-sm btn-primary" id="btn-org-add-worker">
+                    <span>+ Add Worker to this Organization</span>
+                  </button>
+                </div>
+
+                <div id="org-workers-list-container">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBPANE 4: Org Audit & Time Spent Log -->
+            <div id="org-pane-audit" class="org-pane" style="display:none;">
+              <div class="table-card">
+                <div style="padding:16px 20px; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main);">Organization File Access & Time Spent Log</h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted);">Audit records showing precise worker timestamps and exact dwell duration spent on each file.</p>
+                  </div>
+                  <span class="badge badge-emerald">Real-Time Time Tracking Active</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="bcs-table">
+                    <thead>
+                      <tr>
+                        <th>Timestamp & Block</th>
+                        <th>Event</th>
+                        <th>Document & File ID</th>
+                        <th>Worker / Actor</th>
+                        <th>Time Spent on File</th>
+                        <th>Details & Justification</th>
+                        <th>Cryptographic Proof</th>
+                      </tr>
+                    </thead>
+                    <tbody id="org-portal-audit-tbody">
+                      <!-- Injected via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 5. TECHNICAL PERFORMANCE ESTIMATOR VIEW -->
+        <section id="view-estimator" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Technical Performance & Resource Estimator
+              </h1>
+              <p class="page-subtitle">Real-time mathematical estimation of CP-ABE encryption overhead, decryption latency, EVM gas units, Merkle proof time, and network bandwidth</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <!-- Interactive Parameter Sliders -->
+            <div class="panel-card">
+              <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">1. Simulation Inputs</h3>
+
+              <div class="form-group" style="margin-top:12px;">
+                <div style="display:flex; justify-content:space-between;">
+                  <label class="form-label">Data Container Size</label>
+                  <span style="font-weight:700; color:var(--royal-blue-light);" id="est-size-display">5,000 KB (5 MB)</span>
+                </div>
+                <input type="range" class="range-slider" id="slider-file-size" min="10" max="50000" step="50" value="5000" />
+                <span class="form-helper">Simulate from small metadata files (10 KB) to heavy genomic/DICOM datasets (50 MB)</span>
+              </div>
+
+              <div class="form-group" style="margin-top:16px;">
+                <div style="display:flex; justify-content:space-between;">
+                  <label class="form-label">Policy Attribute Complexity</label>
+                  <span style="font-weight:700; color:var(--teal-bright);" id="est-attrs-display">5 Attributes</span>
+                </div>
+                <input type="range" class="range-slider" id="slider-attribute-count" min="1" max="25" step="1" value="5" />
+                <span class="form-helper">Number of discrete attribute leaves in the CP-ABE policy access tree</span>
+              </div>
+
+              <div class="form-group" style="margin-top:16px;">
+                <label class="form-label">Boolean Access Tree Structure</label>
+                <select id="estimator-logic-type" class="form-select">
+                  <option value="AND" selected>Conjunctive AND Formula (A AND B AND C)</option>
+                  <option value="OR">Disjunctive OR Formula (A OR B OR C)</option>
+                  <option value="Threshold">k-of-n Shamir Threshold Tree (3-of-5)</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-top:16px;">
+                <label class="form-label">Storage Backend Adapter</label>
+                <select id="estimator-storage-backend" class="form-select">
+                  <option value="IPFS" selected>IPFS Content-Addressed Decentralized Storage</option>
+                  <option value="S3">AWS S3 Hybrid Presigned Bucket</option>
+                  <option value="Arweave">Arweave Permanent Storage</option>
+                </select>
+              </div>
+
+              <button class="header-btn btn-primary" id="btn-recalculate-estimator" style="margin-top:18px; width:100%; justify-content:center;">
+                <span>Compute Live Resource Metrics</span>
+              </button>
+            </div>
+
+            <!-- Mathematical Output KPI Cards -->
+            <div class="panel-card" style="background:var(--bg-surface);">
+              <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">2. Computed Cryptographic Benchmarks</h3>
+              
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px;">
+                <div style="background:var(--bg-card); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                  <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">ENCRYPTION LATENCY</div>
+                  <div style="font-size:1.5rem; font-weight:800; color:var(--royal-blue-light);" id="res-enc-latency">4.85 ms</div>
+                  <div style="font-size:0.7rem; color:var(--text-dim);">AES-256-GCM + Shamir Secret Sharing</div>
+                </div>
+
+                <div style="background:var(--bg-card); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                  <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">DECRYPTION LATENCY</div>
+                  <div style="font-size:1.5rem; font-weight:800; color:var(--emerald-success);" id="res-dec-latency">2.75 ms</div>
+                  <div style="font-size:0.7rem; color:var(--text-dim);">Client-side polynomial reconstruction</div>
+                </div>
+
+                <div style="background:var(--bg-card); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                  <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">ESTIMATED EVM GAS</div>
+                  <div style="font-size:1.5rem; font-weight:800; color:var(--amber-warning);" id="res-gas-units">124,200 gas</div>
+                  <div style="font-size:0.7rem; color:var(--text-dim);" id="res-gas-cost">~$10.71 USD equivalent</div>
+                </div>
+
+                <div style="background:var(--bg-card); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                  <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">MERKLE PROOF TIME</div>
+                  <div style="font-size:1.5rem; font-weight:800; color:var(--teal-bright);" id="res-merkle-time">19.83 µs</div>
+                  <div style="font-size:0.7rem; color:var(--text-dim);">Cryptographic leaf verification</div>
+                </div>
+              </div>
+
+              <div style="background:var(--bg-card); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle); margin-top:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">REVOCATION SPEEDUP VS FULL RE-ENCRYPTION</div>
+                    <div style="font-size:1.4rem; font-weight:800; color:var(--indigo-vibrant);" id="res-speedup">2,045x Faster</div>
+                  </div>
+                  <span class="badge badge-emerald">0.12ms on-chain</span>
+                </div>
+                <div style="font-size:0.74rem; color:var(--text-dim); margin-top:4px;">Smart contract instantly revokes the user's credential state; zero heavy ciphertext re-encryption required.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Matrix Table -->
+          <div class="table-card" style="margin-top:20px;">
+            <div class="panel-header" style="padding:16px 20px;">
+              <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main);">Architectural Comparison: BCS vs Traditional KMS vs Naive On-Chain</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="bcs-table">
+                <thead>
+                  <tr>
+                    <th>Architecture</th>
+                    <th>Access Revocation Latency</th>
+                    <th>Storage Cost Overhead</th>
+                    <th>Zero-Knowledge Support</th>
+                    <th>Decentralization & Auditability</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong style="color:var(--teal-bright);">OmniVault BCS (Smart Contract + CP-ABE)</strong></td>
+                    <td><span class="badge badge-emerald">0.12 ms (Instant)</span></td>
+                    <td><span class="badge badge-blue">Low (Off-chain blobs + IPFS/S3)</span></td>
+                    <td><span class="badge badge-teal">Supported (zk-SNARKs)</span></td>
+                    <td><span class="badge badge-emerald">100% Immutable Merkle Ledger</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Centralized AWS KMS / Cloud IAM</strong></td>
+                    <td>450 ms (Cloud API propagation)</td>
+                    <td>Standard S3 storage tiers</td>
+                    <td>No (Symmetric Master Key only)</td>
+                    <td>Centralized Cloud SPOF (Vendor lock-in)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Naive Full On-Chain Re-encryption</strong></td>
+                    <td>280 - 450 ms + Multi-block wait</td>
+                    <td>Extremely High (~2.8M gas per re-encrypt)</td>
+                    <td>No</td>
+                    <td>Heavy gas bottleneck on EVM</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. EMERGENCY BREAK-GLASS CONSOLE VIEW -->
+        <section id="view-emergency" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 2 22 22 22"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Emergency Break-Glass & Lockdown Console
+              </h1>
+              <p class="page-subtitle">Disaster recovery and critical clinical emergency protocol: Temporary override with immutable audit logging and TTL countdown</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-teal" id="btn-open-manage-emergency-whitelist">
+                <span>🛡️ Manage Emergency Responders</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <!-- Break-Glass Trigger Box -->
+            <div class="emergency-break-glass-box">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.4rem;">🚨</span>
+                <h3 style="font-size:1.2rem; font-weight:800; color:#fca5a5;">Execute Break-Glass Emergency Override</h3>
+              </div>
+              <p style="font-size:0.82rem; color:#fecdd3; margin-top:8px;">Used for life-safety clinical emergencies (ER triage) or severe enterprise disaster response. Immediately grants temporary access regardless of missing attributes and records a tamper-proof event onto the Merkle blockchain.</p>
+
+              <form id="emergency-break-glass-form" style="margin-top:16px;">
+                <div class="form-group">
+                  <label class="form-label" style="color:#fecdd3;">Select Encrypted Asset to Override</label>
+                  <select id="emergency-file-select" class="form-select" style="background:#201010; color:#fff; border-color:#ef4444;">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-top:10px;">
+                  <label class="form-label" style="color:#fecdd3;">Emergency Incident Identifier</label>
+                  <input type="text" id="emergency-incident-id" class="form-input" style="background:#201010; color:#fff; border-color:#ef4444;" placeholder="e.g. INC-ER-2026-9041" required />
+                </div>
+
+                <div class="form-group" style="margin-top:10px;">
+                  <label class="form-label" style="color:#fecdd3;">Incident Justification / Emergency Context</label>
+                  <textarea id="emergency-justification" class="form-textarea" style="background:#201010; color:#fff; border-color:#ef4444;" placeholder="e.g. Critical trauma resuscitation; attending physician requires surgical clearance record immediately." required></textarea>
+                </div>
+
+                <div class="form-group" style="margin-top:10px;">
+                  <label class="form-label" style="color:#fecdd3;">Temporary Time-To-Live (TTL)</label>
+                  <select id="emergency-ttl" class="form-select" style="background:#201010; color:#fff; border-color:#ef4444;">
+                    <option value="900" selected>15 Minutes (Default Clinical Triage)</option>
+                    <option value="1800">30 Minutes (Extended Emergency)</option>
+                    <option value="3600">1 Hour (Disaster Recovery)</option>
+                  </select>
+                </div>
+
+                <button type="submit" class="header-btn btn-danger" id="btn-execute-break-glass" style="margin-top:16px; width:100%; justify-content:center;">
+                  <span>Execute Cryptographic Break-Glass Override</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- Emergency Quarantine & Active Incidents -->
+            <div class="panel-card">
+              <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">Active Emergency Incidents & Lockdown</h3>
+              
+              <div id="active-incidents-container" style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+                <div style="padding:16px; background:var(--bg-surface); border-radius:var(--radius-md); text-align:center; color:var(--text-dim);">
+                  No active break-glass emergency incidents. Ledger is operating normally.
+                </div>
+              </div>
+
+              <!-- Organization / File Lockdown Switch -->
+              <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-subtle);">
+                <h4 style="font-size:0.95rem; font-weight:800; color:var(--coral-danger);">Instant Security Quarantine / Lockdown</h4>
+                <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">Freeze an entire organization's repository or a specific file instantly in case of an ongoing credential compromise.</p>
+
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                  <select id="lockdown-target-select" class="form-select" style="flex:1;">
+                    <!-- Options populated via JS -->
+                  </select>
+                  <button class="header-btn btn-danger btn-sm" id="btn-trigger-lockdown">Lockdown</button>
+                  <button class="header-btn btn-secondary btn-sm" id="btn-restore-lockdown">Restore</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. CLOUD REPOSITORY VIEW -->
+        <section id="view-files" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">Off-Chain Cloud Repository</h1>
+              <p class="page-subtitle">Encrypted data blobs in content-addressed storage (IPFS/S3 equivalent) indexed on blockchain</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-primary" id="btn-open-upload-modal">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg>
+                <span>Upload New File</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-toolbar">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="file-search-input" placeholder="Search files, owners, policies..." />
+              </div>
+              <div class="table-filter-group">
+                <select id="file-status-filter" class="filter-select">
+                  <option value="all">All File Statuses</option>
+                  <option value="active">Active Access</option>
+                  <option value="revoked">Globally Revoked</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="bcs-table">
+                <thead>
+                  <tr>
+                    <th>File Identifier</th>
+                    <th>Document Name & Description</th>
+                    <th>Organization</th>
+                    <th>Importance</th>
+                    <th>Data Owner</th>
+                    <th>Access Policy</th>
+                    <th>Off-Chain CID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="files-table-body">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. IDENTITY & ATTRIBUTES VIEW -->
+        <section id="view-users" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">Identity & Cryptographic Attribute Wallet</h1>
+              <p class="page-subtitle">Decentralized Identifiers (W3C DIDs), Verifiable Credentials (VCs), and zero-knowledge proofs</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-primary" id="btn-open-user-modal">
+                <span>+ Register New Identity</span>
+              </button>
+              <button class="header-btn btn-secondary" id="btn-open-issue-attr-modal">
+                <span>Issue Attribute</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="bcs-table">
+                <thead>
+                  <tr>
+                    <th>Unique User ID & DID</th>
+                    <th>Name & Email</th>
+                    <th>Organization & Department</th>
+                    <th>Clearance</th>
+                    <th>Cryptographic Attributes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. IMMUTABLE ON-CHAIN AUDIT LOG VIEW -->
+        <section id="view-audit" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">Immutable On-Chain Audit Trail</h1>
+              <p class="page-subtitle">Append-only cryptographic event ledger committed in real-time to the blockchain Merkle Root</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-teal" id="btn-open-manage-log-viewers">
+                <span>🔒 Manage Log Access Permissions</span>
+              </button>
+              <button class="header-btn btn-secondary" id="btn-export-audit-json">Export JSON</button>
+            </div>
+          </div>
+
+          <!-- Merkle Root Banner -->
+          <div class="merkle-banner">
+            <div class="merkle-banner-info">
+              <div class="brand-icon" style="background:var(--grad-primary); width:36px; height:36px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <strong style="color:var(--text-main);">CURRENT CRYPTOGRAPHIC MERKLE ROOT:</strong>
+                <div class="merkle-root-text" id="onchain-merkle-root">Loading cryptographic root...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-toolbar">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="audit-search-input" placeholder="Search event logs, blocks, hashes..." />
+              </div>
+              <div class="table-filter-group">
+                <select id="audit-event-filter" class="filter-select">
+                  <option value="all">All Events</option>
+                  <option value="FileSessionDuration">File Reading Session (Dwell Duration)</option>
+                  <option value="AccessGranted">Access Granted</option>
+                  <option value="AccessDenied">Access Denied</option>
+                  <option value="FileUploaded">File Uploaded</option>
+                  <option value="AccessRevoked">Access Revoked</option>
+                  <option value="EmergencyBreakGlass">Emergency Break-Glass</option>
+                </select>
+                <select id="audit-org-filter" class="filter-select">
+                  <option value="all">All Organizations</option>
+                  <!-- Populated via JS -->
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="bcs-table">
+                <thead>
+                  <tr>
+                    <th>Exact Timestamp (UTC & Local)</th>
+                    <th>Block & Index</th>
+                    <th>Event Type</th>
+                    <th>Target File & Org</th>
+                    <th>Actor / Worker</th>
+                    <th>Time Spent on File</th>
+                    <th>Details & Justification</th>
+                    <th>Cryptographic Hash</th>
+                    <th>Proof</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 10. GAS & BENCHMARKS VIEW -->
+        <section id="view-benchmarks" class="content-view" style="display:none;">
+          <div class="page-header">
+            <div class="page-title-box">
+              <h1 class="page-title">Performance & Gas Benchmarks</h1>
+              <p class="page-subtitle">Real-time performance measurements of CP-ABE policy evaluation and smart contract revocation</p>
+            </div>
+            <div class="page-actions">
+              <button class="header-btn btn-primary" id="btn-run-live-benchmark">
+                <span>Run Live Benchmark</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-card" id="benchmarks-display-container">
+            <div style="text-align:center; padding:30px; color:var(--text-muted);">
+              Click "Run Live Benchmark" to execute live measurements.
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- MODAL: Add User / Register Unique ID -->
+  <div class="modal-overlay" id="modal-add-user">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Register New Unique ID & Identity</h3>
+        <button class="modal-close-btn" data-modal="modal-add-user">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Unique User ID (Username)</label>
+          <input type="text" id="new-user-id" class="form-input" placeholder="e.g. user_david_99" required />
+          <span class="form-helper">Every person receives a unique cryptographic ID and W3C DID</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="new-user-name" class="form-input" placeholder="e.g. David Morrison" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Organization</label>
+            <select id="new-user-org" class="form-select">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department / Unit</label>
+            <input type="text" id="new-user-dept" class="form-input" placeholder="e.g. Cardiology, Treasury, Dev" />
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <input type="text" id="new-user-role" class="form-input" placeholder="e.g. Doctor, Analyst, Lead" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Clearance Level</label>
+            <select id="new-user-clearance" class="form-select">
+              <option value="Level-1 Public">Level-1 Public</option>
+              <option value="Level-2 Restricted">Level-2 Restricted</option>
+              <option value="Level-3 Confidential" selected>Level-3 Confidential</option>
+              <option value="Level-4 Secret">Level-4 Secret</option>
+              <option value="Level-5 TopSecret">Level-5 TopSecret</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Worker Password (Optional / For Private Org)</label>
+          <input type="password" id="new-user-pwd" class="form-input" placeholder="Set your password/token" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-add-user">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-save-new-user">Create Identity</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Create New Organization -->
+  <div class="modal-overlay" id="modal-create-org">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Dedicated Organization Workspace</h3>
+        <button class="modal-close-btn" data-modal="modal-create-org">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Organization ID</label>
+          <input type="text" id="create-org-id" class="form-input" placeholder="e.g. city_general_hospital" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Organization Name</label>
+          <input type="text" id="create-org-name" class="form-input" placeholder="e.g. City General Hospital" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Sector / Domain</label>
+            <select id="create-org-sector" class="form-select">
+              <option value="General Purpose / Universal Commons" selected>General Purpose / Universal Commons</option>
+              <option value="Defense, Military & Armed Forces (Army / DoD)">Defense, Military & Armed Forces (Army / DoD)</option>
+              <option value="Intelligence & Homeland Security">Intelligence & Homeland Security</option>
+              <option value="Confidential Communications & SecOps">Confidential Communications & SecOps</option>
+              <option value="Healthcare & Clinical Systems">Healthcare & Clinical Systems</option>
+              <option value="FinTech & Sovereign Banking">FinTech & Sovereign Banking</option>
+              <option value="Aerospace, Space & Defense">Aerospace, Space & Defense</option>
+              <option value="AI Labs & DeepTech Cryptography">AI Labs & DeepTech Cryptography</option>
+              <option value="Government, Legal & Sovereign Archives">Government, Legal & Sovereign Archives</option>
+              <option value="Critical Infrastructure & Energy">Critical Infrastructure & Energy</option>
+              <option value="Corporate Enterprise & Supply Chain">Corporate Enterprise & Supply Chain</option>
+              <option value="Academic Research & Education">Academic Research & Education</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Clearance</label>
+            <select id="create-org-clearance" class="form-select">
+              <option value="Level-1 Public">Level-1 Public</option>
+              <option value="Level-2 Restricted">Level-2 Restricted</option>
+              <option value="Level-3 Confidential" selected>Level-3 Confidential</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description & Security Scope</label>
+          <input type="text" id="create-org-desc" class="form-input" placeholder="e.g. Private hospital clinical network for licensed practitioners." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Allowed Worker Roles (comma separated)</label>
+          <input type="text" id="create-org-roles" class="form-input" placeholder="Doctor, Surgeon, Nurse, Specialist" />
+        </div>
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Authorized Member Usernames (Whitelisted Workers)</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="header-btn btn-sm btn-teal" onclick="triggerExcelImportForInput('create-org-members')" title="Upload an Excel (.xlsx / .csv) with names alone">
+                📊 Upload Excel of Names
+              </button>
+              <button type="button" class="header-btn btn-sm btn-secondary" onclick="downloadSampleWhitelistExcel()" title="Download sample Excel (.xlsx)">
+                📥 Sample Excel
+              </button>
+            </div>
+          </div>
+          <input type="text" id="create-org-members" class="form-input" placeholder="e.g. dr_priya, nurse_arjun, dr_chen (or upload Excel)" />
+          <span class="form-helper">Creator controls who is authorized. Upload an Excel sheet of names alone or enter comma-separated names.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Worker Entry Password / Security PIN</label>
+          <input type="password" id="create-org-pwd" class="form-input" placeholder="Set password for worker entry" required />
+          <span class="form-helper">Workers must supply this password to unlock this organization's private workspace</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-create-org">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-save-new-org">Create Workspace</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Verify Worker Password for Organization -->
+  <div class="modal-overlay" id="modal-verify-worker">
+    <div class="modal-container" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="verify-worker-modal-title">Unlock Organization Workspace</h3>
+        <button class="modal-close-btn" data-modal="modal-verify-worker">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">This organization is protected by security restrictions. Please enter your worker credentials to enter.</p>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Worker Password / Organization PIN</label>
+          <input type="password" id="verify-worker-password-input" class="form-input" placeholder="Enter worker password..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-verify-worker">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-submit-verify-worker">Unlock Workspace</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Issue Attribute -->
+  <div class="modal-overlay" id="modal-issue-attr">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Issue Attribute to Identity</h3>
+        <button class="modal-close-btn" data-modal="modal-issue-attr">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Target Identity</label>
+          <select id="issue-attr-user-select" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Attribute Name (Key:Value)</label>
+          <input type="text" id="issue-attr-name" class="form-input" placeholder="e.g. Role:Doctor or Clearance:High or Org:MetroHospital" required />
+          <span class="form-helper">Immediately issued on the Smart Contract & CP-ABE Authority</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-issue-attr">Cancel</button>
+        <button class="header-btn btn-teal" id="btn-save-issue-attr">Issue Attribute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Merkle Proof Verification -->
+  <div class="modal-overlay" id="modal-merkle-proof">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Cryptographic Merkle Inclusion Proof</h3>
+        <button class="modal-close-btn" data-modal="modal-merkle-proof">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Leaf Hash (SHA-256 Event Commitment)</label>
+          <div class="code-hash font-mono" id="proof-leaf-hash" style="word-break:break-all;">--</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Merkle Root</label>
+          <div class="code-hash font-mono" id="proof-root-hash" style="word-break:break-all;">--</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sibling Path Proof</label>
+          <pre class="vc-display-card" id="proof-path-display"></pre>
+        </div>
+        <div id="proof-verification-badge"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-merkle-proof">Close</button>
+        <button class="header-btn btn-primary" id="btn-run-proof-verify">Verify Proof Against Root</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Verifiable Credentials & zk-Proof -->
+  <div class="modal-overlay" id="modal-view-vc">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">W3C Verifiable Credentials & zk-Proof</h3>
+        <button class="modal-close-btn" data-modal="modal-view-vc">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Decentralized Identifier (DID)</label>
+          <div class="code-hash font-mono" id="modal-did-uri">did:bcs:...</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cryptographically Signed Verifiable Credential (JSON-LD)</label>
+          <pre class="vc-display-card" id="modal-vc-json"></pre>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-surface); padding:12px; border-radius:var(--radius-md);">
+          <div>
+            <strong style="color:var(--text-main); font-size:0.85rem;">Zero-Knowledge Attribute Proof</strong>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Prove possession of attribute without revealing plaintext identity</div>
+          </div>
+          <button type="button" class="header-btn btn-sm btn-teal" id="btn-generate-zk-from-modal">Generate zk-SNARK</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-view-vc">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AWS S3 Presigned URL -->
+  <div class="modal-overlay" id="modal-s3-presign">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">AWS S3 Hybrid Presigned Upload URL</h3>
+        <button class="modal-close-btn" data-modal="modal-s3-presign">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">Pre-signed URL generated for off-chain AWS S3 bucket storage with HMAC-SHA256 signature.</p>
+        <div class="form-group" style="margin-top:10px;">
+          <label class="form-label">Signed Direct-Upload URL (Valid for 15 minutes)</label>
+          <div class="code-hash font-mono" id="modal-s3-url" style="word-break:break-all; max-height:120px; overflow-y:auto;">--</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-s3-presign">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Custom Data Classification -->
+  <div class="modal-overlay" id="modal-custom-classification">
+    <div class="modal-container" style="max-width:540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Custom Data Classification</h3>
+        <button class="modal-close-btn" data-modal="modal-custom-classification">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">
+          Establish an organization or regulatory-specific classification tier beyond standard enterprise ratings (e.g. HIPAA PHI, Defense ITAR, or AI Neural Weights).
+        </p>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Classification Label / Tier Name</label>
+          <input type="text" id="custom-class-label" class="form-input" placeholder="e.g. HIPAA / Clinical PHI, Defense ITAR, Board Confidential" required />
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">Sensitivity / Importance Score (1-100)</label>
+            <strong id="custom-class-score-val" style="color:var(--royal-blue-light);">85%</strong>
+          </div>
+          <input type="range" id="custom-class-score" min="10" max="100" value="85" class="form-range" />
+          <span class="form-helper">Determines cryptographic verification scrutiny and dwell audit logging threshold</span>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Badge Color Accent</label>
+          <div class="color-swatch-picker" id="custom-class-color-picker">
+            <div class="color-swatch selected" data-color="#ec4899" style="background:#ec4899;" title="Rose / Clinical"></div>
+            <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;" title="Purple / AI IP"></div>
+            <div class="color-swatch" data-color="#eab308" style="background:#eab308;" title="Amber / Defense"></div>
+            <div class="color-swatch" data-color="#06b6d4" style="background:#06b6d4;" title="Cyan / Cyber"></div>
+            <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;" title="Red / Sovereign"></div>
+            <div class="color-swatch" data-color="#10b981" style="background:#10b981;" title="Emerald / Verified"></div>
+          </div>
+          <input type="hidden" id="custom-class-color" value="#ec4899" />
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Compliance Description & Scope</label>
+          <textarea id="custom-class-desc" class="form-input" rows="2" placeholder="e.g. Governed by HIPAA Title II Privacy Rule. Restricted to licensed attending physicians."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-top:12px; background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">PREVIEW BADGE:</span>
+          <div style="margin-top:6px;" id="custom-class-preview-badge">
+            <span class="custom-classification-badge" style="background-color:rgba(236,72,153,0.15); border-color:#ec4899; color:#ec4899;">
+              🏷️ HIPAA / Clinical PHI (85%)
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-custom-classification">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-save-custom-classification">Register Classification</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Role to User Identity -->
+  <div class="modal-overlay" id="modal-add-user-role">
+    <div class="modal-container" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Role to Identity Profile</h3>
+        <button class="modal-close-btn" data-modal="modal-add-user-role">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">
+          Assign an additional role to <strong id="modal-role-user-name" style="color:var(--text-main);">this user</strong> without needing to register a whole new identity.
+        </p>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Select User Identity</label>
+          <select id="modal-role-user-select" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">New Role to Assign</label>
+          <input type="text" id="modal-role-input" class="form-input" placeholder="e.g. Doctor, Surgeon, Emergency Care, Lead Researcher" required />
+          <span class="form-helper">Will issue a smart-contract role attribute and update W3C Verifiable Credentials</span>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Department (Optional)</label>
+          <input type="text" id="modal-role-dept-input" class="form-input" placeholder="e.g. Surgery, Intensive Care, Cardiology" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-add-user-role">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-save-user-role">Assign Role</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Member to Organization -->
+  <div class="modal-overlay" id="modal-org-add-member">
+    <div class="modal-container" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Authorize & Whitelist Worker</h3>
+        <button class="modal-close-btn" data-modal="modal-org-add-member">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">
+          Add an authorized worker to <strong id="modal-org-add-member-org-name" style="color:var(--text-main);">this organization</strong>. Only creator-whitelisted workers can enter and interact with files.
+        </p>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Select Registered User</label>
+          <select id="modal-org-add-member-user-select" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Or Whitelist by Custom Username / Excel Sheet</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="header-btn btn-sm btn-teal" onclick="triggerExcelImportForInput('modal-org-add-member-custom-id')" title="Upload an Excel (.xlsx / .csv) with names alone">
+                📊 Upload Excel of Names
+              </button>
+              <button type="button" class="header-btn btn-sm btn-secondary" onclick="downloadSampleWhitelistExcel()" title="Download sample Excel (.xlsx)">
+                📥 Sample Excel
+              </button>
+            </div>
+          </div>
+          <input type="text" id="modal-org-add-member-custom-id" class="form-input" placeholder="e.g. dr_chen, specialist_rao, nurse_arjun (or upload Excel)" />
+          <span class="form-helper">Enter unique username(s) or upload an Excel sheet of names alone to whitelist workers in bulk</span>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Role in Organization</label>
+          <input type="text" id="modal-org-add-member-role" class="form-input" placeholder="e.g. Doctor, Specialist, Nurse, Researcher" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Confidentiality Clearance Level</label>
+          <select id="modal-org-add-member-clearance" class="form-select">
+            <option value="Level-1 Unclassified">Level-1 Unclassified (Public Commons)</option>
+            <option value="Level-2 Restricted">Level-2 Restricted (Internal Team)</option>
+            <option value="Level-3 Confidential" selected>Level-3 Confidential (Operational)</option>
+            <option value="Level-4 Secret">Level-4 Secret (Enterprise / Clinical Critical)</option>
+            <option value="Level-5 Top Secret">Level-5 Top Secret (Sovereign Critical)</option>
+          </select>
+          <span class="form-helper">Cryptographic security envelope threshold</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-org-add-member">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-save-org-add-member">Whitelist & Add Worker</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Worker Role & Clearance (Creator Governance) -->
+  <div class="modal-overlay" id="modal-org-edit-member">
+    <div class="modal-container" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Worker Role & Confidentiality Clearance</h3>
+        <button class="modal-close-btn" data-modal="modal-org-edit-member">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">
+          Organization Creator Governance: Define the authorized role and confidentiality level for <strong id="modal-org-edit-user-display" style="color:var(--text-main);">--</strong>. The worker can only access files meeting these cryptographic thresholds.
+        </p>
+        <input type="hidden" id="modal-org-edit-user-id" />
+        <input type="hidden" id="modal-org-edit-org-id" />
+        
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Assigned Role</label>
+          <input type="text" id="modal-org-edit-role" class="form-input" placeholder="e.g. Chief Cardiologist, Defense Analyst, Senior Auditor" required />
+          <span class="form-helper">Issues on-chain Role attribute token</span>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Confidentiality Clearance Level</label>
+          <select id="modal-org-edit-clearance" class="form-select">
+            <option value="Level-1 Unclassified">Level-1 Unclassified (Public Commons)</option>
+            <option value="Level-2 Restricted">Level-2 Restricted (Internal Team)</option>
+            <option value="Level-3 Confidential" selected>Level-3 Confidential (Operational)</option>
+            <option value="Level-4 Secret">Level-4 Secret (Enterprise / Clinical Critical)</option>
+            <option value="Level-5 Top Secret">Level-5 Top Secret (Sovereign Critical)</option>
+          </select>
+          <span class="form-helper">Cryptographic security envelope threshold</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-org-edit-member">Cancel</button>
+        <button class="header-btn btn-primary" id="btn-save-org-edit-member">Save Changes & Update On-Chain</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Manage Direct File Decryption Access (Grant/Revoke Users) -->
+  <div class="modal-overlay" id="modal-manage-file-access">
+    <div class="modal-container" style="max-width:540px; border-color:var(--royal-blue);">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display:flex; align-items:center; gap:8px;">
+          <span>🔑</span> Manage File Access & Authorized Users
+        </h3>
+        <button class="modal-close-btn" data-modal="modal-manage-file-access">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted); line-height:1.45;">
+          Direct Access Governance: As the file owner or organization creator, grant direct decryption access to any username. Authorized users can decrypt this file directly without attribute policy restrictions.
+        </p>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Select File</label>
+          <select id="modal-file-access-file-select" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label">Currently Authorized Users (Direct File Access)</label>
+          <div id="modal-file-access-list" style="display:flex; flex-wrap:wrap; gap:8px; min-height:40px; padding:10px; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Grant Direct Decryption Access (Username or Excel Sheet)</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="header-btn btn-sm btn-teal" onclick="triggerExcelImportForInput('modal-file-access-new-user', 'btn-grant-file-user-access')" title="Upload an Excel (.xlsx / .csv) of names alone to grant file access in bulk">
+                📊 Upload Excel & Grant Access
+              </button>
+              <button type="button" class="header-btn btn-sm btn-secondary" onclick="downloadSampleWhitelistExcel()" title="Download sample Excel (.xlsx)">
+                📥 Sample Excel
+              </button>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="modal-file-access-new-user" class="form-input" placeholder="e.g. dr_watson, nurse_arjun, Anita Desai (or upload Excel)" />
+            <button type="button" class="header-btn btn-primary" id="btn-grant-file-user-access" style="white-space:nowrap;">🔑 Grant File Access</button>
+          </div>
+          <span class="form-helper">Upload an Excel sheet with names alone or enter comma-separated names to grant on-chain decryption access in bulk.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-manage-file-access">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Manage File Audit Log Viewers -->
+  <div class="modal-overlay" id="modal-manage-log-viewers">
+    <div class="modal-container" style="max-width:540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Manage File Audit Log Access Permissions</h3>
+        <button class="modal-close-btn" data-modal="modal-manage-log-viewers">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">
+          Audit Log Privacy Governance: By default, file audit trails are visible only to the file uploader and organization creator. Whitelist other trusted usernames below to grant them audit trail viewing access. (To grant file decryption access, use the 🔑 File Access button).
+        </p>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Select Protected File</label>
+          <select id="modal-log-viewers-file-select" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label">Current Authorized Log Viewers</label>
+          <div id="modal-log-viewers-list" style="display:flex; flex-wrap:wrap; gap:8px; min-height:40px; padding:10px; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Grant Audit Log Viewing Access (Username or Excel Sheet)</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="header-btn btn-sm btn-teal" onclick="triggerExcelImportForInput('modal-log-viewers-new-user', 'btn-grant-log-viewer')" title="Upload an Excel (.xlsx / .csv) of names alone">
+                📊 Upload Excel & Grant All
+              </button>
+              <button type="button" class="header-btn btn-sm btn-secondary" onclick="downloadSampleWhitelistExcel()" title="Download sample Excel (.xlsx)">
+                📥 Sample Excel
+              </button>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="modal-log-viewers-new-user" class="form-input" placeholder="e.g. auditor_chen, compliance_lead (or upload Excel)" />
+            <button type="button" class="header-btn btn-teal" id="btn-grant-log-viewer" style="white-space:nowrap;">Grant Log View Access</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-manage-log-viewers">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Manage Emergency Responder Whitelist -->
+  <div class="modal-overlay" id="modal-manage-emergency-whitelist">
+    <div class="modal-container" style="max-width:540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Manage File Emergency Break-Glass Responders</h3>
+        <button class="modal-close-btn" data-modal="modal-manage-emergency-whitelist">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted);">
+          Emergency Break-Glass Governance: Only designated emergency responders (plus file uploader and organization creator) can execute cryptographic overrides on this asset during critical incidents.
+        </p>
+        <div id="modal-emergency-whitelist-perm-warning" class="frontdoor-error-banner" style="display:none; margin-top:10px;">
+          <span style="font-size:1.15rem; flex-shrink:0;">⛔</span>
+          <span id="modal-emergency-whitelist-perm-warning-text"></span>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Select Protected File</label>
+          <select id="modal-emergency-whitelist-file-select" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label">Whitelisted Emergency Responders</label>
+          <div id="modal-emergency-whitelist-list" style="display:flex; flex-wrap:wrap; gap:8px; min-height:40px; padding:10px; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Whitelist Emergency Responders (Username or Excel Sheet)</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="header-btn btn-sm btn-teal" onclick="triggerExcelImportForInput('modal-emergency-whitelist-new-user', 'btn-add-emergency-responder')" title="Upload an Excel (.xlsx / .csv) of names alone to whitelist emergency responders in bulk">
+                📊 Upload Excel & Whitelist All
+              </button>
+              <button type="button" class="header-btn btn-sm btn-secondary" onclick="downloadSampleWhitelistExcel()" title="Download sample Excel (.xlsx)">
+                📥 Sample Excel
+              </button>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="modal-emergency-whitelist-new-user" class="form-input" placeholder="e.g. er_triage_doc, disaster_marshal (or upload Excel)" />
+            <button type="button" class="header-btn btn-danger" id="btn-add-emergency-responder" style="white-space:nowrap;">Whitelist Responder</button>
+          </div>
+          <span class="form-helper">Upload an Excel sheet with names alone or enter comma-separated names to whitelist emergency break-glass responders in bulk.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn btn-secondary" data-modal="modal-manage-emergency-whitelist">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Requester Direct Emergency Break-Glass Decryption -->
+  <div class="modal-overlay" id="modal-requester-emergency-breakglass">
+    <div class="modal-container" style="max-width:520px; border-color:var(--coral-danger);">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color:var(--coral-danger); display:flex; align-items:center; gap:8px;">
+          <span>🚨</span> Emergency Break-Glass Override
+        </h3>
+        <button class="modal-close-btn" data-modal="modal-requester-emergency-breakglass">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.84rem; color:var(--text-muted); line-height:1.45;">
+          Life-or-Death Emergency Access Protocol: You are requesting cryptographic decryption override. The smart contract validates whether your identity is on the pre-approved emergency whitelist for this specific asset.
+        </p>
+        <div class="panel-card" style="margin-top:14px; background:var(--bg-surface); border:1px solid var(--border-subtle); padding:14px;">
+          <div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Target Asset</div>
+          <div style="font-weight:800; font-size:1.1rem; color:var(--text-main); margin-top:2px;" id="breakglass-modal-filename">filename.enc</div>
+          <div style="font-size:0.78rem; color:var(--royal-blue-light); font-family:monospace;" id="breakglass-modal-fileid">file_001</div>
+          <div style="margin-top:10px;" id="breakglass-modal-auth-badge">
+            <!-- Dynamically populated badge: Whitelisted or Denied -->
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label">Emergency Incident Justification (Required for on-chain audit)</label>
+          <input type="text" id="breakglass-modal-justification" class="form-input" placeholder="e.g. Critical trauma patient code-blue override" required />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Incident Tracking ID</label>
+          <input type="text" id="breakglass-modal-incident-id" class="form-input" readonly style="font-family:monospace; background:var(--bg-elevated);" />
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:space-between; gap:12px;">
+        <button type="button" class="header-btn btn-secondary" data-modal="modal-requester-emergency-breakglass">Cancel</button>
+        <button type="button" class="header-btn btn-danger" id="btn-submit-requester-breakglass" style="flex:1; justify-content:center;">
+          <span>⚡ Execute Break-Glass Override & Decrypt</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Global File Input for Excel (.xlsx / .xls / .csv / .txt) Bulk Whitelist Import -->
+  <input type="file" id="global-excel-whitelist-input" accept=".xlsx,.xls,.csv,.txt" style="display:none;" />
+
+  <script src="app.js?v=3.5.0"></script>
+</body>
+</html>

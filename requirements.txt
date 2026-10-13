@@ -1,0 +1,9 @@
+# Blockchain Cloud Storage (BCS) Prototype
+# -------------------------------------------------------------
+# Zero dependencies required!
+# The entire application (REST API, crypto fallback, blockchain simulation,
+# and static frontend server) runs on standard Python 3.8+ libraries.
+#
+# Optional production performance enhancements:
+# cryptography>=41.0.0   # For hardware-accelerated AES-GCM (auto-detected)
+# gunicorn>=21.2.0       # Optional WSGI server if wrapped in WSGI

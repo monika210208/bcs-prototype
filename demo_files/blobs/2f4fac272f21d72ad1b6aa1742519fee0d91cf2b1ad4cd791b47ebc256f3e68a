@@ -1,0 +1,1 @@
+{"policy": ["Role:Nurse", "Dept:Cardiology"], "file_nonce": "aebe1266ca6c10111c1d94a9", "file_ciphertext": "0ebdd93381e96d1b005238fdf6e7a00596aa144a3d26a407db8e020a43a0945214a254f00229f2a3ecc9fe0c8cc341f6ac7efe78be0ffe", "key_nonce": "fc28d67ed905d58b66fea5b0", "wrapped_data_key": "09e6c7345423970c20e069f496176170e49842609a72960d908ff5775df1c8ffaa3058e67e01b18ca34827de75211fe9"}

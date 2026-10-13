@@ -1,0 +1,23 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# macOS files
+.DS_Store
+
+# Node.js and Hardhat generated files
+node_modules/
+artifacts/
+cache/
+coverage/
+
+# Build outputs
+dist/
+build/
